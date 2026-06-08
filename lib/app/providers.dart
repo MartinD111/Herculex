@@ -1,0 +1,61 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../core/clock.dart';
+import '../data/local/database.dart';
+import '../features/auth/domain/app_user.dart';
+import '../features/profile/data/local_profile_repository.dart';
+import '../features/profile/domain/profile.dart';
+
+import '../features/auth/data/firebase_auth_repository.dart';
+import '../data/sync/sync_engine.dart';
+
+export '../core/clock.dart' show clockProvider;
+
+/// Overridden in main() once SharedPreferences has been initialised.
+final sharedPreferencesProvider = Provider<SharedPreferences>((_) {
+  throw UnimplementedError('sharedPreferencesProvider must be overridden in main()');
+});
+
+final localAuthRepositoryProvider = Provider<FirebaseAuthRepository>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  final clock = ref.watch(clockProvider);
+  final repo = FirebaseAuthRepository(prefs, clock);
+  ref.onDispose(repo.dispose);
+  return repo;
+});
+
+final authStateProvider = StreamProvider<AppUser?>((ref) {
+  final repo = ref.watch(localAuthRepositoryProvider);
+  return repo.authStateChanges();
+});
+
+final syncEngineProvider = Provider<SyncEngine>((ref) {
+  final db = ref.watch(appDatabaseProvider);
+  final engine = SyncEngine(db);
+  ref.onDispose(engine.dispose);
+  return engine;
+});
+
+final syncStatusProvider = StreamProvider<SyncStatus>((ref) {
+  return ref.watch(syncEngineProvider).statusStream;
+});
+
+final localProfileRepositoryProvider = Provider<LocalProfileRepository>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  final repo = LocalProfileRepository(prefs);
+  ref.onDispose(repo.dispose);
+  return repo;
+});
+
+final profileProvider = StreamProvider<Profile?>((ref) {
+  final repo = ref.watch(localProfileRepositoryProvider);
+  return repo.watch();
+});
+
+/// Single AppDatabase instance for the lifetime of the app.
+final appDatabaseProvider = Provider<AppDatabase>((ref) {
+  final db = AppDatabase();
+  ref.onDispose(db.close);
+  return db;
+});

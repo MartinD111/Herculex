@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git init *)",
+      "Bash(git remote *)",
+      "Bash(copy \"c:\\\\Users\\\\marti\\\\AMS d.o.o\\\\SWY\\\\android\\\\app\\\\src\\\\main\\\\kotlin\\\\com\\\\example\\\\swy_app\\\\MainActivity.kt\" \"c:\\\\Users\\\\marti\\\\AMS d.o.o\\\\SWY\\\\android\\\\app\\\\src\\\\main\\\\kotlin\\\\com\\\\example\\\\herculex\\\\MainActivity.kt\")"
+    ]
+  }
+}

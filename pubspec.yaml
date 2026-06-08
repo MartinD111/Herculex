@@ -1,0 +1,55 @@
+name: herculex
+description: "Herculex — fitness, nutrition, and recovery tracking."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # State management
+  flutter_riverpod: ^2.6.1
+
+  # Routing
+  go_router: ^14.6.2
+
+  # Local persistence (Phase 1: profile + simple KV)
+  shared_preferences: ^2.3.3
+
+  # Local DB (Phase 2: workouts, sets, sessions)
+  drift: ^2.21.0
+  drift_flutter: ^0.2.4
+  sqlite3_flutter_libs: ^0.5.26
+  path_provider: ^2.1.5
+
+  # Charts (Insights tab)
+  fl_chart: ^0.69.0
+
+  # Nutrition (Phase 3: OpenFoodFacts + barcode)
+  http: ^1.2.2
+  mobile_scanner: ^5.2.3
+  permission_handler: ^11.3.1
+  cached_network_image: ^3.4.1
+
+  # Utilities
+  intl: ^0.19.0
+  uuid: ^4.5.1
+  collection: ^1.18.0
+  device_calendar: ^4.3.1
+  timezone: ^0.9.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  custom_lint: ^0.7.0
+  riverpod_lint: ^2.6.3
+  build_runner: ^2.4.13
+  drift_dev: ^2.21.0
+
+flutter:
+  uses-material-design: true
