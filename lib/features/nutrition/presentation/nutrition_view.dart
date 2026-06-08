@@ -77,8 +77,10 @@ class NutritionView extends ConsumerWidget {
       children: [
         IconButton(
           icon: const Icon(Icons.chevron_left),
+          // DateUtils.addDaysToDate is DST-safe and returns a date-only value,
+          // keeping the provider family key stable across day changes.
           onPressed: () => ref.read(selectedDateProvider.notifier).state =
-              date.subtract(const Duration(days: 1)),
+              DateUtils.addDaysToDate(date, -1),
         ),
         TextButton(
           onPressed: () async {
@@ -89,7 +91,8 @@ class NutritionView extends ConsumerWidget {
               lastDate: today.add(const Duration(days: 30)),
             );
             if (picked != null) {
-              ref.read(selectedDateProvider.notifier).state = picked;
+              ref.read(selectedDateProvider.notifier).state =
+                  DateUtils.dateOnly(picked);
             }
           },
           child: Text(
@@ -102,7 +105,7 @@ class NutritionView extends ConsumerWidget {
           onPressed: isToday
               ? null
               : () => ref.read(selectedDateProvider.notifier).state =
-                  date.add(const Duration(days: 1)),
+                  DateUtils.addDaysToDate(date, 1),
         ),
       ],
     );

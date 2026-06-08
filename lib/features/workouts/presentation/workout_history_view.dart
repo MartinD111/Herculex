@@ -58,6 +58,13 @@ class WorkoutHistoryView extends ConsumerWidget {
         plane: '',
         defaultRestSeconds: 120,
         isCustom: false,
+        category: 'strength',
+        modality: 'barbell',
+        cnsScore: 3,
+        recoveryImpact: 3,
+        loggingMetric: 'weight_reps',
+        supportsWeightedBodyweight: false,
+        isReviewed: false,
       );
 }
 

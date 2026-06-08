@@ -24,19 +24,22 @@ final nutritionRepositoryProvider = Provider<NutritionRepository>((ref) {
   );
 });
 
-/// Currently-viewed date in the Nutrition tab + dashboard summary.
-final selectedDateProvider = StateProvider<DateTime>((_) {
-  final n = DateTime.now();
+/// Currently-viewed date in the Nutrition tab. Always a date-only value
+/// (midnight, no time component) so the [entriesForDateProvider] /
+/// [dailyTotalsProvider] family keys stay stable as the user pages between
+/// days. Initialized from the injectable clock.
+final selectedDateProvider = StateProvider<DateTime>((ref) {
+  final n = ref.watch(clockProvider).now();
   return DateTime(n.year, n.month, n.day);
 });
 
 final entriesForDateProvider =
-    StreamProvider.family<List<FoodEntryData>, DateTime>((ref, date) {
+    StreamProvider.autoDispose.family<List<FoodEntryData>, DateTime>((ref, date) {
   return ref.watch(nutritionRepositoryProvider).watchEntriesForDate(date);
 });
 
 final dailyTotalsProvider =
-    StreamProvider.family<DailyTotals, DateTime>((ref, date) {
+    StreamProvider.autoDispose.family<DailyTotals, DateTime>((ref, date) {
   return ref.watch(nutritionRepositoryProvider).watchDailyTotals(date);
 });
 
@@ -65,9 +68,8 @@ final recentFoodsProvider = FutureProvider<List<FoodData>>((ref) {
 });
 
 /// Group entries by meal for rendering meal sections.
-final entriesByMealProvider =
-    Provider.family<AsyncValue<Map<Meal, List<FoodEntryData>>>, DateTime>(
-        (ref, date) {
+final entriesByMealProvider = Provider.autoDispose
+    .family<AsyncValue<Map<Meal, List<FoodEntryData>>>, DateTime>((ref, date) {
   final async = ref.watch(entriesForDateProvider(date));
   return async.whenData((entries) {
     final out = <Meal, List<FoodEntryData>>{

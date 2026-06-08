@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/local/database.dart';
 import '../../../theme/colors.dart';
+import 'custom_exercise_builder_view.dart';
 import 'workouts_providers.dart';
 
 class ExercisePickerSheet extends ConsumerStatefulWidget {
@@ -76,7 +77,25 @@ class _ExercisePickerSheetState extends ConsumerState<ExercisePickerSheet> {
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Create custom exercise'),
+                  onPressed: () async {
+                    final created =
+                        await CustomExerciseBuilderView.show(context);
+                    if (created != null && context.mounted) {
+                      Navigator.of(context).pop(created);
+                    }
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
             Expanded(
               child: exercises.when(
                 data: (list) => ListView.separated(

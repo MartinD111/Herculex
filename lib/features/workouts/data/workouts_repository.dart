@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../../core/clock.dart';
 import '../../../data/local/database.dart';
+import '../../../data/local/exercise_biomechanics.dart';
 
 /// Single facade over the workout tables. UI never touches Drift directly —
 /// it goes through this. Keeps queries co-located and swappable later.
@@ -13,39 +14,96 @@ class WorkoutsRepository {
 
   // ── Exercise catalog ───────────────────────────────────────────────────
 
+  /// Alias-aware search. Matches the canonical [name], the coarse
+  /// [primaryMuscle], and the denormalized [aka] alias blob (which the importer
+  /// and builder keep in sync with [ExerciseAliases]) — so searching any alias
+  /// surfaces the parent, while only the canonical name is ever displayed.
   Stream<List<ExerciseCatalogData>> watchExercises({String? query}) {
     final q = _db.select(_db.exerciseCatalog)
       ..orderBy([(t) => OrderingTerm(expression: t.name)]);
     if (query != null && query.trim().isNotEmpty) {
       final like = '%${query.trim()}%';
-      q.where((t) => t.name.like(like) | t.primaryMuscle.like(like));
+      q.where((t) =>
+          t.name.like(like) | t.primaryMuscle.like(like) | t.aka.like(like));
     }
     return q.watch();
   }
 
+  /// Granular muscle involvement for an exercise (drives the recovery engine
+  /// and the exercise detail UI).
+  Stream<List<ExerciseMuscleData>> watchExerciseMuscles(int exerciseId) {
+    return (_db.select(_db.exerciseMuscles)
+          ..where((t) => t.exerciseId.equals(exerciseId)))
+        .watch();
+  }
+
+  /// Creates a fully-attributed custom exercise. Legacy biomechanics columns
+  /// (`mechanics`/`force`/`plane`/coarse `primaryMuscle`) are derived from the
+  /// rich inputs so custom exercises behave like seeded ones everywhere.
   Future<ExerciseCatalogData> createCustomExercise({
     required String name,
-    required String primaryMuscle,
+    required List<String> primaryMuscles,
+    List<String> secondaryMuscles = const [],
+    List<String> stabilizers = const [],
+    String category = 'strength',
+    String? movementPattern,
+    String modality = 'barbell',
     required String equipment,
-    required String mechanics,
-    required String force,
-    required String plane,
+    int cnsScore = 3,
+    int recoveryImpact = 3,
+    String loggingMetric = 'weight_reps',
+    bool supportsWeightedBodyweight = false,
+    List<String> attachments = const [],
+    List<String> aliases = const [],
     int defaultRestSeconds = 120,
   }) async {
-    final id = await _db.into(_db.exerciseCatalog).insert(
-          ExerciseCatalogCompanion.insert(
-            name: name,
-            primaryMuscle: primaryMuscle,
-            equipment: equipment,
-            mechanics: mechanics,
-            force: force,
-            plane: plane,
-            defaultRestSeconds: Value(defaultRestSeconds),
-            isCustom: const Value(true),
-          ),
-        );
-    return (_db.select(_db.exerciseCatalog)..where((t) => t.id.equals(id)))
-        .getSingle();
+    final coarse = primaryMuscles.isEmpty
+        ? 'Core'
+        : ExerciseBiomechanics.coarseMuscle(primaryMuscles.first);
+    return _db.transaction(() async {
+      final id = await _db.into(_db.exerciseCatalog).insert(
+            ExerciseCatalogCompanion.insert(
+              name: name,
+              primaryMuscle: coarse,
+              equipment: equipment,
+              mechanics: ExerciseBiomechanics.mechanics(movementPattern, category),
+              force: ExerciseBiomechanics.force(movementPattern, coarse),
+              plane: ExerciseBiomechanics.plane(movementPattern),
+              defaultRestSeconds: Value(defaultRestSeconds),
+              isCustom: const Value(true),
+              aka: Value(aliases.isEmpty ? null : aliases.join(', ')),
+              category: Value(category),
+              movementPattern: Value(movementPattern),
+              modality: Value(modality),
+              cnsScore: Value(cnsScore),
+              recoveryImpact: Value(recoveryImpact),
+              loggingMetric: Value(loggingMetric),
+              supportsWeightedBodyweight: Value(supportsWeightedBodyweight),
+              attachments: Value(attachments.isEmpty ? null : attachments.join(', ')),
+              // Hand-authored ⇒ treated as reviewed.
+              isReviewed: const Value(true),
+            ),
+          );
+      Future<void> writeMuscles(List<String> ms, String role) async {
+        for (final m in ms) {
+          await _db.into(_db.exerciseMuscles).insert(
+                ExerciseMusclesCompanion.insert(
+                    exerciseId: id, muscle: m, role: role),
+              );
+        }
+      }
+
+      await writeMuscles(primaryMuscles, 'primary');
+      await writeMuscles(secondaryMuscles, 'secondary');
+      await writeMuscles(stabilizers, 'stabilizer');
+      for (final a in aliases) {
+        await _db.into(_db.exerciseAliases).insert(
+              ExerciseAliasesCompanion.insert(exerciseId: id, alias: a),
+            );
+      }
+      return (_db.select(_db.exerciseCatalog)..where((t) => t.id.equals(id)))
+          .getSingle();
+    });
   }
 
   // ── Sessions ───────────────────────────────────────────────────────────

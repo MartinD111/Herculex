@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
 import '../data/analytics_repository.dart';
+import '../domain/cns_fatigue.dart';
 import '../domain/muscle_recovery.dart';
 import '../domain/balance_analyzer.dart';
 import '../domain/biometric_correlations.dart';
@@ -23,8 +24,25 @@ final muscleRecoveryProvider = FutureProvider<List<MuscleRecoveryResult>>((ref) 
   final sets = await db.select(db.setEntries).get();
   final exercises = await db.select(db.workoutExercises).get();
   final catalog = await db.select(db.exerciseCatalog).get();
-  
+  final muscles = await db.select(db.exerciseMuscles).get();
+
   return MuscleRecovery.compute(
+    sets: sets,
+    workoutExercises: exercises,
+    catalog: catalog,
+    exerciseMuscles: muscles,
+    asOf: DateTime.now(),
+  );
+});
+
+/// Rolling CNS readiness derived from per-exercise CNS scores.
+final cnsFatigueProvider = FutureProvider<CnsFatigueResult>((ref) async {
+  final db = ref.watch(appDatabaseProvider);
+  final sets = await db.select(db.setEntries).get();
+  final exercises = await db.select(db.workoutExercises).get();
+  final catalog = await db.select(db.exerciseCatalog).get();
+
+  return CnsFatigue.compute(
     sets: sets,
     workoutExercises: exercises,
     catalog: catalog,

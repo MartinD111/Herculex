@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
-import 'seed_data.dart';
+import 'exercise_importer.dart';
 import 'tables.dart';
 
 part 'database.g.dart';
@@ -9,6 +9,8 @@ part 'database.g.dart';
 @DriftDatabase(
   tables: [
     ExerciseCatalog,
+    ExerciseMuscles,
+    ExerciseAliases,
     WorkoutSessions,
     WorkoutExercises,
     SetEntries,
@@ -35,13 +37,13 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (m) async {
           await m.createAll();
-          await _seed();
+          await ExerciseImporter.runFromAsset(this);
         },
         onUpgrade: (m, from, to) async {
           if (from < 2) {
@@ -72,27 +74,27 @@ class AppDatabase extends _$AppDatabase {
           if (from < 7) {
             await m.createTable(pendingSyncOps);
           }
+          if (from < 8) {
+            // Exercise Intelligence: enrich ExerciseCatalog + normalized tables.
+            await m.addColumn(exerciseCatalog, exerciseCatalog.aka);
+            await m.addColumn(exerciseCatalog, exerciseCatalog.category);
+            await m.addColumn(exerciseCatalog, exerciseCatalog.movementPattern);
+            await m.addColumn(
+                exerciseCatalog, exerciseCatalog.movementPatternRaw);
+            await m.addColumn(exerciseCatalog, exerciseCatalog.modality);
+            await m.addColumn(exerciseCatalog, exerciseCatalog.cnsScore);
+            await m.addColumn(exerciseCatalog, exerciseCatalog.recoveryImpact);
+            await m.addColumn(exerciseCatalog, exerciseCatalog.loggingMetric);
+            await m.addColumn(
+                exerciseCatalog, exerciseCatalog.supportsWeightedBodyweight);
+            await m.addColumn(exerciseCatalog, exerciseCatalog.attachments);
+            await m.addColumn(exerciseCatalog, exerciseCatalog.isReviewed);
+            await m.createTable(exerciseMuscles);
+            await m.createTable(exerciseAliases);
+            await ExerciseImporter.runFromAsset(this);
+          }
         },
       );
-
-  Future<void> _seed() async {
-    await batch((b) {
-      b.insertAll(
-        exerciseCatalog,
-        kSeedExercises.map(
-          (e) => ExerciseCatalogCompanion.insert(
-            name: e.name,
-            primaryMuscle: e.primaryMuscle,
-            equipment: e.equipment,
-            mechanics: e.mechanics,
-            force: e.force,
-            plane: e.plane,
-            defaultRestSeconds: Value(e.defaultRestSeconds),
-          ),
-        ),
-      );
-    });
-  }
 }
 
 QueryExecutor _open() => driftDatabase(name: 'herculex');

@@ -6,6 +6,8 @@ import 'package:drift/drift.dart';
 class ExerciseCatalog extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text()();
+  // Legacy coarse muscle group (Chest|Back|Shoulders|Quads|…). Kept for
+  // back-compat; granular involvement lives in [ExerciseMuscles].
   TextColumn get primaryMuscle => text()();
   TextColumn get equipment => text()();
   // compound | isolation
@@ -17,10 +19,66 @@ class ExerciseCatalog extends Table {
   IntColumn get defaultRestSeconds => integer().withDefault(const Constant(120))();
   BoolColumn get isCustom => boolean().withDefault(const Constant(false))();
 
+  // ── Exercise Intelligence (v8) ──
+  /// Denormalized alias blob for quick search; canonical aliases live in
+  /// [ExerciseAliases]. Display always uses [name].
+  TextColumn get aka => text().nullable()();
+  // strength | hypertrophy | powerlifting | calisthenics | crossfit | cardio | mobility
+  TextColumn get category => text().withDefault(const Constant('strength'))();
+  // Coarse: squat | hinge | horizontal_push | vertical_push | horizontal_pull |
+  // vertical_pull | lunge | carry | core | isolation | other
+  TextColumn get movementPattern => text().nullable()();
+  /// Original granular pattern text from the source dataset (fidelity).
+  TextColumn get movementPatternRaw => text().nullable()();
+  // barbell | dumbbell | machine_plate | machine_selectorized | cable | smith |
+  // kettlebell | band | bodyweight | other
+  TextColumn get modality => text().withDefault(const Constant('barbell'))();
+  /// CNS fatigue cost, 1–10. Drives recovery + max-effort logic.
+  IntColumn get cnsScore => integer().withDefault(const Constant(3))();
+  /// Systemic recovery demand, 1–5.
+  IntColumn get recoveryImpact => integer().withDefault(const Constant(3))();
+  // weight_reps | reps | time | distance | time_distance | weight_time
+  TextColumn get loggingMetric =>
+      text().withDefault(const Constant('weight_reps'))();
+  /// Enables the "+ added weight" field & bodyweight-base calculations.
+  BoolColumn get supportsWeightedBodyweight =>
+      boolean().withDefault(const Constant(false))();
+  /// JSON list of attachment labels, e.g. ["rope","v-bar"]. Null = none.
+  TextColumn get attachments => text().nullable()();
+  /// False = attributes were machine-derived and not yet human-reviewed.
+  BoolColumn get isReviewed => boolean().withDefault(const Constant(false))();
+
   @override
   List<Set<Column>> get uniqueKeys => [
         {name, equipment},
       ];
+}
+
+/// Normalized muscle involvement — the recovery engine's primary input.
+@DataClassName('ExerciseMuscleData')
+class ExerciseMuscles extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get exerciseId =>
+      integer().references(ExerciseCatalog, #id, onDelete: KeyAction.cascade)();
+  TextColumn get muscle => text()();
+  // primary | secondary | stabilizer
+  TextColumn get role => text()();
+  RealColumn get contribution => real().withDefault(const Constant(1.0))();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+        {exerciseId, muscle, role},
+      ];
+}
+
+/// Search aliases. Searching any alias returns the parent exercise; the parent's
+/// [ExerciseCatalog.name] remains the only displayed name.
+@DataClassName('ExerciseAliasData')
+class ExerciseAliases extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get exerciseId =>
+      integer().references(ExerciseCatalog, #id, onDelete: KeyAction.cascade)();
+  TextColumn get alias => text()();
 }
 
 @DataClassName('WorkoutSessionData')
