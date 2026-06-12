@@ -295,6 +295,47 @@ class PendingSyncOps extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
+// ── Workout Templates & Folders ────────────────────────────────────────────
+
+/// A folder that groups workout templates (optional — templates without a
+/// folderId are "unfiled").
+@DataClassName('WorkoutFolderData')
+class WorkoutFolders extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get name => text()();
+  TextColumn get emoji => text().withDefault(const Constant('💪'))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// A reusable workout template. Optionally belongs to a folder.
+@DataClassName('WorkoutTemplateData')
+class WorkoutTemplates extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get name => text()();
+  TextColumn get notes => text().nullable()();
+  IntColumn get folderId => integer()
+      .nullable()
+      .references(WorkoutFolders, #id, onDelete: KeyAction.setNull)();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get lastUsedAt => dateTime().nullable()();
+}
+
+/// One exercise slot inside a template, with optional set targets.
+@DataClassName('TemplateExerciseData')
+class TemplateExercises extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get templateId => integer()
+      .references(WorkoutTemplates, #id, onDelete: KeyAction.cascade)();
+  IntColumn get exerciseId => integer()
+      .references(ExerciseCatalog, #id, onDelete: KeyAction.restrict)();
+  IntColumn get orderIndex => integer()();
+  IntColumn get targetSets => integer().withDefault(const Constant(3))();
+  IntColumn get targetRepsMin => integer().nullable()();
+  IntColumn get targetRepsMax => integer().nullable()();
+  IntColumn get targetRestSeconds => integer().nullable()();
+  IntColumn get supersetGroup => integer().nullable()();
+}
+
 
 
 

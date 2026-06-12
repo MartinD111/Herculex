@@ -15,7 +15,14 @@
       "Bash(flutter test *)",
       "Bash(adb devices *)",
       "Bash(adb shell *)",
-      "Bash(findstr \"applicationId\")"
+      "Bash(findstr \"applicationId\")",
+      "Bash(ls \"C:\\\\Users\\\\marti\\\\.gemini\\\\antigravity-ide\\\\scratch\\\\swy_flutter\\\\android\\\\app\")",
+      "Read(//c/Users/marti/.gemini/antigravity-ide/scratch/swy_flutter/android/app/**)",
+      "Bash(cat \"C:\\\\Users\\\\marti\\\\.gemini\\\\antigravity-ide\\\\scratch\\\\swy_flutter\\\\pubspec.yaml\")",
+      "Read(//c/Users/marti/.gemini/antigravity-ide/scratch/swy_flutter/**)",
+      "Bash(cd \"c:\\\\Users\\\\marti\\\\AMS d.o.o\\\\Herculex\" && git diff --no-index /dev/null lib/theme/colors.dart 2>/dev/null | head -50 || cat \"c:\\\\Users\\\\marti\\\\AMS d.o.o\\\\Herculex\\\\lib\\\\theme\\\\colors.dart\")",
+      "Read(//dev/**)",
+      "Bash(flutter build *)"
     ]
   }
 }

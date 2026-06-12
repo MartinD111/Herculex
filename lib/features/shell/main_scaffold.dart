@@ -5,11 +5,11 @@ import '../../widgets/floating_nav_bar.dart';
 import '../analytics/presentation/insights_view.dart';
 import '../dashboard/presentation/dashboard_view.dart';
 import '../nutrition/presentation/nutrition_view.dart';
+import '../profile/presentation/profile_view.dart';
 import '../programs/presentation/training_blocks_view.dart';
 import '../workouts/presentation/workouts_view.dart';
 
-/// The five-tab home shell. Bottom-nav index drives which feature view shows.
-/// Each child is a real feature view — no more hijacking taps to modal sheets.
+/// The six-tab home shell. Bottom-nav index drives which feature view shows.
 class MainScaffold extends ConsumerStatefulWidget {
   const MainScaffold({super.key});
 
@@ -26,6 +26,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     WorkoutsView(),
     TrainingBlocksView(),
     InsightsView(),
+    ProfileView(),
   ];
 
   @override

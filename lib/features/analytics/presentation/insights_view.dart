@@ -176,7 +176,7 @@ class _BalanceCard extends ConsumerWidget {
                         const Expanded(
                           child: Text(
                             "Asymmetry detected (>25%). Consider adding more pulling exercises to support structural shoulder balance.",
-                            style: TextStyle(fontSize: 11, color: AppColors.secondary),
+                            style: TextStyle(fontSize: 11, color: AppColors.onSurfaceVariant),
                           ),
                         ),
                       ],

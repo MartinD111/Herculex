@@ -78,9 +78,8 @@ class _FoodPickerSheetState extends ConsumerState<FoodPickerSheet> with TickerPr
     );
     final food = await ref.read(nutritionRepositoryProvider).lookupBarcode(code);
     if (!mounted) return;
-    Navigator.of(context).pop(); // dismiss loader
+    Navigator.of(context).pop();
     if (food == null) {
-      // Offer to create custom with this barcode prefilled.
       final created = await CustomFoodFormSheet.show(context, initialBarcode: code);
       if (created != null) _logFood(created);
     } else {
@@ -108,19 +107,22 @@ class _FoodPickerSheetState extends ConsumerState<FoodPickerSheet> with TickerPr
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.withValues(alpha: 0.3),
+                color: AppColors.outlineVariant.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Text('Add to ${widget.meal.label}', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             TabBar(
               controller: _tabs,
               isScrollable: true,
+              tabAlignment: TabAlignment.start,
               labelColor: AppColors.primary,
-              unselectedLabelColor: AppColors.secondary,
+              unselectedLabelColor: AppColors.onSurfaceVariant,
               indicatorColor: AppColors.primary,
+              indicatorSize: TabBarIndicatorSize.label,
+              dividerColor: Colors.transparent,
               tabs: const [
                 Tab(text: 'Search'),
                 Tab(text: 'Recent'),
@@ -128,6 +130,7 @@ class _FoodPickerSheetState extends ConsumerState<FoodPickerSheet> with TickerPr
                 Tab(text: 'Custom'),
               ],
             ),
+            const Divider(height: 1),
             Expanded(
               child: TabBarView(
                 controller: _tabs,
@@ -157,32 +160,27 @@ class _FoodPickerSheetState extends ConsumerState<FoodPickerSheet> with TickerPr
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _queryCtrl,
-                  onChanged: (v) => setState(() => _query = v),
-                  onSubmitted: (_) => _runRemoteSearch(),
-                  decoration: InputDecoration(
-                    hintText: 'Search foods…',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.qr_code_scanner),
-                      onPressed: _scan,
-                      tooltip: 'Scan barcode',
-                    ),
-                    filled: true,
-                    fillColor: AppColors.surfaceContainer,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: TextField(
+            controller: _queryCtrl,
+            onChanged: (v) => setState(() => _query = v),
+            onSubmitted: (_) => _runRemoteSearch(),
+            decoration: InputDecoration(
+              hintText: 'Search foods…',
+              prefixIcon: const Icon(Icons.search, size: 20),
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.qr_code_scanner, size: 20),
+                onPressed: _scan,
+                tooltip: 'Scan barcode',
               ),
-            ],
+              filled: true,
+              fillColor: AppColors.surfaceContainer,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(28),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
           ),
         ),
         Expanded(child: _localResultsList(controller)),
@@ -204,9 +202,14 @@ class _FoodPickerSheetState extends ConsumerState<FoodPickerSheet> with TickerPr
                   Text('No matches in your library yet.', style: Theme.of(context).textTheme.bodyMedium),
                   const SizedBox(height: 12),
                   if ((_query ?? '').trim().isNotEmpty)
-                    TextButton.icon(
-                      icon: const Icon(Icons.cloud_outlined),
+                    FilledButton.icon(
+                      icon: const Icon(Icons.cloud_outlined, size: 18),
                       label: const Text('Search OpenFoodFacts'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        shape: const StadiumBorder(),
+                      ),
                       onPressed: _runRemoteSearch,
                     ),
                 ],
@@ -214,11 +217,10 @@ class _FoodPickerSheetState extends ConsumerState<FoodPickerSheet> with TickerPr
             ),
           );
         }
-        return ListView.separated(
+        return ListView.builder(
           controller: controller,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
           itemCount: list.length,
-          separatorBuilder: (_, _) => const Divider(height: 1),
           itemBuilder: (_, i) => _FoodTile(food: list[i], onTap: () => _logFood(list[i])),
         );
       },
@@ -238,7 +240,6 @@ class _FoodPickerSheetState extends ConsumerState<FoodPickerSheet> with TickerPr
     await ref.read(nutritionRepositoryProvider).searchFoods(q, includeRemote: true);
     if (!mounted) return;
     Navigator.of(context).pop();
-    // foodSearchProvider auto-refreshes via Drift stream — nothing else to do.
   }
 
   Widget _buildRecentTab(ScrollController controller) {
@@ -250,11 +251,10 @@ class _FoodPickerSheetState extends ConsumerState<FoodPickerSheet> with TickerPr
             child: Text('Nothing logged in the last 30 days.', style: Theme.of(context).textTheme.bodyMedium),
           );
         }
-        return ListView.separated(
+        return ListView.builder(
           controller: controller,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
           itemCount: list.length,
-          separatorBuilder: (_, _) => const Divider(height: 1),
           itemBuilder: (_, i) => _FoodTile(food: list[i], onTap: () => _logFood(list[i])),
         );
       },
@@ -268,20 +268,24 @@ class _FoodPickerSheetState extends ConsumerState<FoodPickerSheet> with TickerPr
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
           child: SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              icon: const Icon(Icons.add),
+              icon: const Icon(Icons.add, size: 18),
               label: const Text('New recipe'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary),
+                shape: const StadiumBorder(),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
               onPressed: () async {
                 final created = await Navigator.push<RecipeData>(
                   context,
                   MaterialPageRoute(builder: (_) => const RecipeBuilderView()),
                 );
-                if (created != null && mounted) {
-                  _logRecipe(created);
-                }
+                if (created != null && mounted) _logRecipe(created);
               },
             ),
           ),
@@ -290,20 +294,14 @@ class _FoodPickerSheetState extends ConsumerState<FoodPickerSheet> with TickerPr
           child: async.when(
             data: (list) {
               if (list.isEmpty) {
-                return Center(
-                  child: Text('No recipes yet.', style: Theme.of(context).textTheme.bodyMedium),
-                );
+                return Center(child: Text('No recipes yet.', style: Theme.of(context).textTheme.bodyMedium));
               }
-              return ListView.separated(
+              return ListView.builder(
                 controller: controller,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 itemCount: list.length,
-                separatorBuilder: (_, _) => const Divider(height: 1),
-                itemBuilder: (_, i) => ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.restaurant_menu),
-                  title: Text(list[i].name),
-                  subtitle: Text('${list[i].servings} servings'),
+                itemBuilder: (_, i) => _RecipeTile(
+                  recipe: list[i],
                   onTap: () => _logRecipe(list[i]),
                 ),
               );
@@ -332,8 +330,14 @@ class _FoodPickerSheetState extends ConsumerState<FoodPickerSheet> with TickerPr
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
-              icon: const Icon(Icons.add),
+              icon: const Icon(Icons.add, size: 18),
               label: const Text('New custom food'),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: const StadiumBorder(),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              ),
               onPressed: () async {
                 final food = await CustomFoodFormSheet.show(context);
                 if (food != null && mounted) _logFood(food);
@@ -354,30 +358,129 @@ class _FoodTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: food.imageUrl != null
-          ? ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: CachedNetworkImage(
-                imageUrl: food.imageUrl!,
-                width: 48,
-                height: 48,
-                fit: BoxFit.cover,
-                errorWidget: (_, _, _) => const Icon(Icons.fastfood),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceContainerLowest,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.4)),
+          ),
+          child: Row(
+            children: [
+              if (food.imageUrl != null)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: CachedNetworkImage(
+                    imageUrl: food.imageUrl!,
+                    width: 44,
+                    height: 44,
+                    fit: BoxFit.cover,
+                    errorWidget: (_, _, _) => _placeholder(),
+                  ),
+                )
+              else
+                _placeholder(),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(food.name, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 2),
+                    Text(
+                      [
+                        if (food.brand != null) food.brand!,
+                        '${food.kcalPer100g.toStringAsFixed(0)} kcal/100g',
+                      ].join(' · '),
+                      style: theme.textTheme.bodySmall?.copyWith(color: AppColors.secondary),
+                    ),
+                  ],
+                ),
               ),
-            )
-          : const Icon(Icons.fastfood),
-      title: Text(food.name, style: theme.textTheme.titleSmall),
-      subtitle: Text(
-        [
-          if (food.brand != null) food.brand!,
-          '${food.kcalPer100g.toStringAsFixed(0)} kcal/100g',
-        ].join(' • '),
-        style: theme.textTheme.bodySmall,
+              const SizedBox(width: 8),
+              Container(
+                width: 32,
+                height: 32,
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.add, color: Colors.white, size: 18),
+              ),
+            ],
+          ),
+        ),
       ),
-      trailing: const Icon(Icons.add_circle_outline),
-      onTap: onTap,
+    );
+  }
+
+  Widget _placeholder() => Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: AppColors.surfaceVariant,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: const Icon(Icons.fastfood, size: 22, color: AppColors.secondary),
+      );
+}
+
+class _RecipeTile extends StatelessWidget {
+  final RecipeData recipe;
+  final VoidCallback onTap;
+  const _RecipeTile({required this.recipe, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceContainerLowest,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.4)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryContainer.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.restaurant_menu, size: 22, color: AppColors.primary),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(recipe.name, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                    Text('${recipe.servings} servings', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.secondary)),
+                  ],
+                ),
+              ),
+              Container(
+                width: 32,
+                height: 32,
+                decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
+                child: const Icon(Icons.add, color: Colors.white, size: 18),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

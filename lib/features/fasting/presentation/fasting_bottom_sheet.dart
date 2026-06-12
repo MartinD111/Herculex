@@ -246,7 +246,7 @@ class _FastingBottomSheetState extends ConsumerState<FastingBottomSheet> {
                       ),
                       child: Icon(
                         Icons.hourglass_empty,
-                        color: isSelected ? AppColors.primary : AppColors.secondary,
+                        color: isSelected ? AppColors.primary : AppColors.onSurfaceVariant,
                         size: 20,
                       ),
                     ),

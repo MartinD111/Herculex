@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
 import '../../../data/local/database.dart';
+import '../data/templates_repository.dart';
 import '../data/workouts_repository.dart';
 import '../domain/calendar_service.dart';
 
@@ -49,4 +50,22 @@ final recentExerciseIdsProvider = FutureProvider<Set<int>>((ref) async {
 final calendarServiceProvider = Provider<CalendarService>((ref) {
   final db = ref.watch(appDatabaseProvider);
   return CalendarService(db);
+});
+
+final templatesRepositoryProvider = Provider<TemplatesRepository>((ref) {
+  return TemplatesRepository(ref.watch(appDatabaseProvider));
+});
+
+final workoutFoldersProvider = StreamProvider<List<WorkoutFolderData>>((ref) {
+  return ref.watch(templatesRepositoryProvider).watchFolders();
+});
+
+final workoutTemplatesProvider =
+    StreamProvider.family<List<WorkoutTemplateData>, int?>((ref, folderId) {
+  return ref.watch(templatesRepositoryProvider).watchTemplates(folderId: folderId);
+});
+
+final templateExercisesProvider =
+    StreamProvider.family<List<TemplateExerciseData>, int>((ref, templateId) {
+  return ref.watch(templatesRepositoryProvider).watchTemplateExercises(templateId);
 });

@@ -159,7 +159,7 @@ class _HealthIntegrationsViewState extends ConsumerState<HealthIntegrationsView>
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : AppColors.secondary,
+            color: isSelected ? Colors.white : AppColors.onSurfaceVariant,
             fontWeight: FontWeight.bold,
             fontSize: 12,
           ),

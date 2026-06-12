@@ -30,6 +30,9 @@ part 'database.g.dart';
     CycleLogs,
     CycleSettings,
     PendingSyncOps,
+    WorkoutFolders,
+    WorkoutTemplates,
+    TemplateExercises,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -37,7 +40,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -92,6 +95,11 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(exerciseMuscles);
             await m.createTable(exerciseAliases);
             await ExerciseImporter.runFromAsset(this);
+          }
+          if (from < 9) {
+            await m.createTable(workoutFolders);
+            await m.createTable(workoutTemplates);
+            await m.createTable(templateExercises);
           }
         },
       );

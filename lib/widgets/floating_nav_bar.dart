@@ -63,6 +63,12 @@ class FloatingNavBar extends StatelessWidget {
                   isSelected: currentIndex == 4,
                   onTap: () => onTap(4),
                 ),
+                _NavItem(
+                  icon: Icons.person_rounded,
+                  label: "Profile",
+                  isSelected: currentIndex == 5,
+                  onTap: () => onTap(5),
+                ),
               ],
             ),
           ),

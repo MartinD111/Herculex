@@ -104,7 +104,7 @@ class _LogEntrySheetState extends ConsumerState<LogEntrySheet> {
         color: theme.bottomSheetTheme.backgroundColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
       ),
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -114,55 +114,94 @@ class _LogEntrySheetState extends ConsumerState<LogEntrySheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.withValues(alpha: 0.3),
+                color: AppColors.outlineVariant.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
           ),
-          const SizedBox(height: 16),
-          Text(title, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-          Text(subtitle, style: theme.textTheme.bodySmall),
           const SizedBox(height: 20),
-          Text(unit.toUpperCase(),
-              style: theme.textTheme.labelSmall?.copyWith(color: AppColors.secondary, letterSpacing: 1.0)),
-          const SizedBox(height: 6),
+          Text(title, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 2),
+          Text(subtitle, style: theme.textTheme.bodySmall?.copyWith(color: AppColors.secondary)),
+          const SizedBox(height: 24),
+          Text(
+            unit.toUpperCase(),
+            style: theme.textTheme.labelSmall?.copyWith(color: AppColors.secondary, letterSpacing: 1.2),
+          ),
+          const SizedBox(height: 8),
           TextField(
             controller: _quantity,
             autofocus: true,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
-            style: theme.textTheme.displayMedium?.copyWith(fontSize: 28),
+            style: theme.textTheme.displayMedium?.copyWith(fontSize: 28, fontWeight: FontWeight.bold),
             decoration: InputDecoration(
               filled: true,
               fillColor: AppColors.surfaceContainer,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(20),
                 borderSide: BorderSide.none,
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             ),
           ),
           const SizedBox(height: 20),
-          Text('MEAL',
-              style: theme.textTheme.labelSmall?.copyWith(color: AppColors.secondary, letterSpacing: 1.0)),
-          const SizedBox(height: 8),
+          Text(
+            'MEAL',
+            style: theme.textTheme.labelSmall?.copyWith(color: AppColors.secondary, letterSpacing: 1.2),
+          ),
+          const SizedBox(height: 10),
           Wrap(
             spacing: 8,
+            runSpacing: 8,
             children: [
               for (final m in Meal.values)
-                ChoiceChip(
-                  label: Text(m.label),
+                _MealChip(
+                  label: m.label,
                   selected: _meal == m,
-                  onSelected: (_) => setState(() => _meal = m),
+                  onTap: () => setState(() => _meal = m),
                 ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 28),
           PremiumButton(
             text: _saving ? 'Saving…' : 'Log',
             onTap: _saving ? () {} : _save,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _MealChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  const _MealChip({required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary : AppColors.surfaceContainer,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: selected ? AppColors.primary : AppColors.outlineVariant.withValues(alpha: 0.5),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: selected ? Colors.white : AppColors.onSurfaceVariant,
+          ),
+        ),
       ),
     );
   }

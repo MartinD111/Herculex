@@ -7,6 +7,7 @@ import '../../../data/local/database.dart';
 import '../../../theme/colors.dart';
 import '../../../widgets/premium_button.dart';
 import 'active_workout_view.dart';
+import 'templates_view.dart';
 import 'workouts_providers.dart';
 
 class WorkoutsView extends ConsumerWidget {
@@ -25,59 +26,103 @@ class WorkoutsView extends ConsumerWidget {
   }
 }
 
-class _WorkoutsLanding extends ConsumerWidget {
+class _WorkoutsLanding extends ConsumerStatefulWidget {
   const _WorkoutsLanding();
 
+  @override
+  ConsumerState<_WorkoutsLanding> createState() => _WorkoutsLandingState();
+}
+
+class _WorkoutsLandingState extends ConsumerState<_WorkoutsLanding>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabs = TabController(length: 2, vsync: this);
+
+  @override
+  void dispose() {
+    _tabs.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return SafeArea(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Workout', style: theme.textTheme.displayMedium),
+                const SizedBox(height: 8),
+                Text(
+                  'Log sets, supersets, and RPE. Rest timer starts when you check a set.',
+                  style: theme.textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 20),
+                PremiumButton(
+                  text: 'Start Empty Workout',
+                  icon: Icons.play_arrow,
+                  onTap: () async {
+                    await ref.read(workoutsRepositoryProvider).startSession();
+                  },
+                ),
+                const SizedBox(height: 20),
+                TabBar(
+                  controller: _tabs,
+                  labelColor: AppColors.primary,
+                  unselectedLabelColor: AppColors.onSurfaceVariant,
+                  indicatorColor: AppColors.primary,
+                  indicatorSize: TabBarIndicatorSize.label,
+                  dividerColor: Colors.transparent,
+                  tabs: const [
+                    Tab(text: 'Recent'),
+                    Tab(text: 'Templates'),
+                  ],
+                ),
+                const Divider(height: 1),
+              ],
+            ),
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabs,
+              children: [
+                _RecentTab(),
+                const TemplatesView(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecentTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final recent = ref.watch(recentSessionsProvider);
 
-    return SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
-        children: [
-          Text('Workout', style: theme.textTheme.displayMedium),
-          const SizedBox(height: 8),
-          Text(
-            'Log sets, supersets, and RPE. Rest timer starts when you check a set.',
-            style: theme.textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 24),
-          PremiumButton(
-            text: 'Start Empty Workout',
-            icon: Icons.play_arrow,
-            onTap: () async {
-              await ref.read(workoutsRepositoryProvider).startSession();
-            },
-          ),
-          const SizedBox(height: 32),
-          Text('Recent', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          recent.when(
-            data: (sessions) => sessions.isEmpty
-                ? Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 32),
-                    child: Center(
-                      child: Text(
-                        'No completed workouts yet',
-                        style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.secondary),
-                      ),
-                    ),
-                  )
-                : Column(
-                    children: [
-                      for (final s in sessions) _SessionTile(session: s),
-                    ],
-                  ),
-            error: (e, _) => Text('Error: $e'),
-            loading: () => const Padding(
-              padding: EdgeInsets.all(24),
-              child: Center(child: CircularProgressIndicator()),
+    return recent.when(
+      data: (sessions) => sessions.isEmpty
+          ? Center(
+              child: Text(
+                'No completed workouts yet',
+                style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.secondary),
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 120),
+              itemCount: sessions.length,
+              itemBuilder: (_, i) => _SessionTile(session: sessions[i]),
             ),
-          ),
-        ],
-      ),
+      error: (e, _) => Center(child: Text('Error: $e')),
+      loading: () => const Center(child: CircularProgressIndicator()),
     );
   }
 }

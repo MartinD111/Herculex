@@ -54,7 +54,7 @@ class AppTheme {
         displayLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: AppColors.darkOnSurface, letterSpacing: -0.5),
         displayMedium: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, color: AppColors.darkOnSurface, letterSpacing: -0.5),
         bodyLarge: TextStyle(fontSize: 16, color: AppColors.darkOnSurface),
-        bodyMedium: TextStyle(fontSize: 14, color: AppColors.outlineVariant),
+        bodyMedium: TextStyle(fontSize: 14, color: AppColors.darkOutlineVariant),
         labelLarge: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.darkOnSurface),
       ),
       cardTheme: CardThemeData(

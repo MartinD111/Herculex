@@ -166,7 +166,7 @@ class _TrainingBlocksViewState extends ConsumerState<TrainingBlocksView> {
             child: Text(
               text,
               style: theme.textTheme.labelLarge?.copyWith(
-                color: isSelected ? Colors.white : theme.textTheme.bodyMedium?.color,
+                color: isSelected ? Colors.white : AppColors.onSurfaceVariant,
               ),
             ),
           ),

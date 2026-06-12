@@ -55,10 +55,7 @@ class _CustomFoodFormSheetState extends ConsumerState<CustomFoodFormSheet> {
       setState(() => _error = 'Name and kcal/100g are required');
       return;
     }
-    setState(() {
-      _saving = true;
-      _error = null;
-    });
+    setState(() { _saving = true; _error = null; });
     final food = await ref.read(nutritionRepositoryProvider).createCustomFood(
           name: name,
           brand: _brand.text.trim().isEmpty ? null : _brand.text.trim(),
@@ -87,29 +84,29 @@ class _CustomFoodFormSheetState extends ConsumerState<CustomFoodFormSheet> {
         ),
         child: ListView(
           controller: controller,
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
           children: [
             Center(
               child: Container(
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.withValues(alpha: 0.3),
+                  color: AppColors.outlineVariant.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            Text('Custom food', style: theme.textTheme.displayMedium?.copyWith(fontSize: 22)),
+            const SizedBox(height: 20),
+            Text('Custom food', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
-            Text('All values per 100 g/ml', style: theme.textTheme.bodySmall),
-            const SizedBox(height: 16),
+            Text('All values per 100 g/ml', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.secondary)),
+            const SizedBox(height: 24),
             _Field(label: 'Name *', controller: _name),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             _Field(label: 'Brand', controller: _brand),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             _Field(label: 'kcal / 100g *', controller: _kcal, numeric: true),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Row(
               children: [
                 Expanded(child: _Field(label: 'Protein g', controller: _protein, numeric: true)),
@@ -119,13 +116,21 @@ class _CustomFoodFormSheetState extends ConsumerState<CustomFoodFormSheet> {
                 Expanded(child: _Field(label: 'Fat g', controller: _fat, numeric: true)),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             _Field(label: 'Default serving (g)', controller: _servingG, numeric: true),
             if (_error != null) ...[
               const SizedBox(height: 12),
-              Text(_error!, style: TextStyle(color: Colors.redAccent)),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.redAccent.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
+                ),
+                child: Text(_error!, style: const TextStyle(color: Colors.redAccent, fontSize: 13)),
+              ),
             ],
-            const SizedBox(height: 24),
+            const SizedBox(height: 28),
             PremiumButton(
               text: _saving ? 'Saving…' : 'Save food',
               onTap: _saving ? () {} : _save,
@@ -145,25 +150,39 @@ class _Field extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-        const SizedBox(height: 4),
+        Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: AppColors.secondary,
+            letterSpacing: 0.8,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 6),
         TextField(
           controller: controller,
           keyboardType: numeric ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
-          inputFormatters: numeric
-              ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))]
-              : null,
+          inputFormatters: numeric ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))] : null,
           decoration: InputDecoration(
             filled: true,
             fillColor: AppColors.surfaceContainer,
             isDense: true,
-            contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+            contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
             ),
           ),
         ),
