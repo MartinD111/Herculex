@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
 import '../../../data/local/database.dart';
+import '../data/micro_workouts_repository.dart';
 import '../data/templates_repository.dart';
 import '../data/workouts_repository.dart';
 import '../domain/calendar_service.dart';
@@ -68,4 +69,55 @@ final workoutTemplatesProvider =
 final templateExercisesProvider =
     StreamProvider.family<List<TemplateExerciseData>, int>((ref, templateId) {
   return ref.watch(templatesRepositoryProvider).watchTemplateExercises(templateId);
+});
+
+// ── V2 logging foundation (Phase 2) ──────────────────────────────────────────
+
+/// Classic vs. Dynamic full-screen workout mode (§14). Session-scoped UI state.
+final dynamicWorkoutModeProvider = StateProvider<bool>((_) => false);
+
+final gymsProvider = StreamProvider<List<GymData>>((ref) {
+  return ref.watch(gymsRepositoryProvider).watchGyms();
+});
+
+final accessoriesProvider = StreamProvider<List<AccessoryData>>((ref) {
+  return ref.watch(accessoriesRepositoryProvider).watchAccessories();
+});
+
+final bandsProvider = StreamProvider<List<BandData>>((ref) {
+  return ref.watch(accessoriesRepositoryProvider).watchBands();
+});
+
+final setAccessoriesProvider =
+    StreamProvider.family<List<SetAccessoryData>, int>((ref, setEntryId) {
+  return ref.watch(accessoriesRepositoryProvider).watchSetAccessories(setEntryId);
+});
+
+final setBandsProvider =
+    StreamProvider.family<List<SetBandData>, int>((ref, setEntryId) {
+  return ref.watch(accessoriesRepositoryProvider).watchSetBands(setEntryId);
+});
+
+/// Latest logged bodyweight — snapshotted onto weighted-bodyweight sets (§9).
+final latestBodyweightProvider = FutureProvider<double?>((ref) {
+  return ref.watch(measurementsRepositoryProvider).latestBodyweightKg();
+});
+
+final microWorkoutsRepositoryProvider = Provider<MicroWorkoutsRepository>((ref) {
+  return MicroWorkoutsRepository(
+      ref.watch(appDatabaseProvider), ref.watch(clockProvider));
+});
+
+/// Active micro workouts with today's completion counts (§20).
+final microWorkoutsTodayProvider =
+    StreamProvider<List<MicroWorkoutStatus>>((ref) {
+  return ref.watch(microWorkoutsRepositoryProvider).watchTodayStatus();
+});
+
+/// Per-exercise progression override row (§16). Null = no override set.
+final exerciseProgressionProvider =
+    FutureProvider.family<ExerciseProgressionData?, int>((ref, exerciseId) {
+  return ref
+      .watch(exerciseProgressionsRepositoryProvider)
+      .forExercise(exerciseId);
 });

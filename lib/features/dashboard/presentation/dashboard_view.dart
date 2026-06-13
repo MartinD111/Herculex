@@ -7,11 +7,13 @@ import '../../../theme/colors.dart';
 import '../../../widgets/glass_container.dart';
 import '../../../data/sync/sync_engine.dart';
 import '../../nutrition/domain/daily_totals.dart';
-import '../../nutrition/domain/macro_targets.dart';
 import '../../nutrition/presentation/nutrition_providers.dart';
 import '../../fasting/presentation/fasting_providers.dart';
 import '../../fasting/presentation/fasting_bottom_sheet.dart';
 import '../../profile/domain/profile.dart';
+import '../domain/dashboard_config.dart';
+import 'dashboard_providers.dart';
+import 'dashboard_widgets.dart';
 
 
 
@@ -28,6 +30,7 @@ class DashboardView extends ConsumerWidget {
     final profile = ref.watch(profileProvider).valueOrNull;
     final isFemale = profile?.sex == BiologicalSex.female;
     final syncStatus = ref.watch(syncStatusProvider).valueOrNull ?? SyncStatus.idle;
+    final config = ref.watch(dashboardConfigProvider);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -37,27 +40,72 @@ class DashboardView extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(theme, greeting, name, today, syncStatus),
-              const SizedBox(height: 32),
-              _buildFastingWidget(theme, ref, context),
-              const SizedBox(height: 24),
-              _LiveMacrosGrid(
-                totals: ref.watch(dailyTotalsProvider(_today())).asData?.value ?? DailyTotals.empty,
-                targets: ref.watch(macroTargetsProvider),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildHeader(theme, greeting, name, today, syncStatus),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.tune, size: 20),
+                    tooltip: 'Customize dashboard',
+                    onPressed: () => _showCustomizeSheet(context, ref),
+                  ),
+                ],
               ),
               const SizedBox(height: 24),
-              _buildImageBanner(theme),
-              const SizedBox(height: 24),
-              if (isFemale) ...[
-                _buildCycleCard(theme),
-                const SizedBox(height: 24),
-              ],
-              _buildTodaysPlan(theme),
-              const SizedBox(height: 100),
+              // Config-driven widget list (§18). Each visible slot maps to a
+              // renderer; the cycle widget is additionally gated on sex.
+              for (final w in config.visibleWidgets)
+                if (w.type != DashboardWidgetType.cycle || isFemale) ...[
+                  _renderWidget(w.type, theme, ref, context),
+                  const SizedBox(height: 24),
+                ],
+              const SizedBox(height: 76),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  /// Maps a dashboard widget type to its renderer. Keeps the existing
+  /// hand-built sections; the new recovery/CNS/volume/PR/bodyweight cards live
+  /// in dashboard_widgets.dart.
+  Widget _renderWidget(DashboardWidgetType type, ThemeData theme, WidgetRef ref,
+      BuildContext context) {
+    switch (type) {
+      case DashboardWidgetType.fastingTimer:
+        return _buildFastingWidget(theme, ref, context);
+      case DashboardWidgetType.macros:
+        return LiveMacrosGrid(
+          totals: ref.watch(dailyTotalsProvider(_today())).asData?.value ??
+              DailyTotals.empty,
+          targets: ref.watch(effectiveTargetsProvider(_today())).asData?.value ??
+              ref.watch(baselineTargetsProvider),
+        );
+      case DashboardWidgetType.todaysPlan:
+        return const SmartWorkoutLauncherCard();
+      case DashboardWidgetType.recoverySummary:
+        return const RecoverySummaryCard();
+      case DashboardWidgetType.cnsLoad:
+        return const CnsLoadMiniCard();
+      case DashboardWidgetType.weeklyVolume:
+        return const WeeklyVolumeMiniCard();
+      case DashboardWidgetType.latestPrs:
+        return const LatestPrsCard();
+      case DashboardWidgetType.bodyweight:
+        return const BodyweightMiniCard();
+      case DashboardWidgetType.cycle:
+        return const CycleFocusCard();
+    }
+  }
+
+  void _showCustomizeSheet(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const DashboardCustomizeSheet(),
     );
   }
 
@@ -311,328 +359,4 @@ class DashboardView extends ConsumerWidget {
     return DateTime(n.year, n.month, n.day);
   }
 
-  // ignore: unused_element
-  Widget _legacyMacroCard(String title, IconData icon, String current, String total, double progress, Color color, ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(title, style: theme.textTheme.labelSmall?.copyWith(color: AppColors.secondary, letterSpacing: 1.0)),
-              Icon(icon, size: 16, color: AppColors.primary),
-            ],
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(current, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-                  const SizedBox(width: 4),
-                  Text(total, style: theme.textTheme.bodySmall?.copyWith(color: AppColors.secondary)),
-                ],
-              ),
-              const SizedBox(height: 8),
-              LinearProgressIndicator(
-                value: progress,
-                backgroundColor: AppColors.surfaceVariant,
-                valueColor: AlwaysStoppedAnimation<Color>(color),
-                borderRadius: BorderRadius.circular(4),
-                minHeight: 4,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildImageBanner(ThemeData theme) {
-    return Container(
-      height: 200,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.3)),
-        color: AppColors.surfaceContainer,
-      ),
-      child: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              gradient: LinearGradient(
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-                colors: [Colors.black.withValues(alpha: 0.7), Colors.transparent],
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 24,
-            left: 24,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Text(
-                    "NEW PROGRAM",
-                    style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text("Core & Flow", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                const Text("15 min mobility routine", style: TextStyle(color: Colors.white70)),
-              ],
-            ),
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCycleCard(ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.primaryContainer.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.primaryContainer),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.2),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.monitor_heart, color: AppColors.primary),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text("Luteal Phase Focus", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                Text(
-                  "Your energy naturally dips this week. Prioritize steady-state cardio and complex carbs over high-intensity intervals.",
-                  style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.onSurfaceVariant),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTodaysPlan(ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text("Today's Plan", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-              const Icon(Icons.add, color: AppColors.primary),
-            ],
-          ),
-          const SizedBox(height: 24),
-          _buildTaskItem("Morning Hydration", "500ml water + electrolytes", "07:00", true, false, theme),
-          const Divider(height: 32),
-          _buildTaskItem("Break Fast", "High protein, moderate fat", "12:00", false, true, theme),
-          const Divider(height: 32),
-          _buildTaskItem("Lower Body Strength", "45 min • Medium Intensity", "17:30", false, false, theme),
-          const Divider(height: 32),
-          _buildTaskItem("Collagen & Wind Down", "Herculex Collagen blend", "21:00", false, false, theme),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF121212),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              onPressed: () {},
-              child: const Text("VIEW FULL WEEK", style: TextStyle(letterSpacing: 2.0)),
-            ),
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTaskItem(String title, String subtitle, String time, bool isCompleted, bool isActive, ThemeData theme) {
-    return Row(
-      children: [
-        Container(
-          width: 24,
-          height: 24,
-          decoration: BoxDecoration(
-            color: isCompleted ? AppColors.primary : Colors.transparent,
-            border: Border.all(
-              color: isCompleted ? AppColors.primary : (isActive ? AppColors.primary : AppColors.outline),
-              width: isActive ? 2 : 1,
-            ),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: isCompleted ? const Icon(Icons.check, size: 16, color: Colors.white) : null,
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  decoration: isCompleted ? TextDecoration.lineThrough : null,
-                  color: isCompleted ? AppColors.secondary : AppColors.onSurface,
-                ),
-              ),
-              Text(
-                subtitle,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  decoration: isCompleted ? TextDecoration.lineThrough : null,
-                  color: AppColors.secondary,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Text(
-          time,
-          style: theme.textTheme.bodySmall?.copyWith(
-            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-            color: isActive ? AppColors.primary : AppColors.secondary,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _LiveMacrosGrid extends StatelessWidget {
-  final DailyTotals totals;
-  final MacroTargets? targets;
-  const _LiveMacrosGrid({required this.totals, required this.targets});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final t = targets;
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      childAspectRatio: 1.5,
-      children: [
-        _card(theme, 'CALORIES', Icons.local_fire_department,
-            current: totals.kcal.round().toString(),
-            total: t == null ? '' : '/ ${t.kcal}',
-            progress: t == null ? null : (totals.kcal / t.kcal).clamp(0.0, 1.0),
-            color: AppColors.primary),
-        _card(theme, 'PROTEIN', Icons.egg_alt,
-            current: '${totals.proteinG.round()}g',
-            total: t == null ? '' : '/ ${t.proteinG}g',
-            progress: t == null ? null : (totals.proteinG / t.proteinG).clamp(0.0, 1.0),
-            color: AppColors.earthBrown),
-        _card(theme, 'CARBS', Icons.bakery_dining,
-            current: '${totals.carbsG.round()}g',
-            total: t == null ? '' : '/ ${t.carbsG}g',
-            progress: t == null ? null : (totals.carbsG / t.carbsG).clamp(0.0, 1.0),
-            color: AppColors.outline),
-        _card(theme, 'FATS', Icons.water_drop,
-            current: '${totals.fatG.round()}g',
-            total: t == null ? '' : '/ ${t.fatG}g',
-            progress: t == null ? null : (totals.fatG / t.fatG).clamp(0.0, 1.0),
-            color: AppColors.tertiary),
-      ],
-    );
-  }
-
-  Widget _card(
-    ThemeData theme,
-    String title,
-    IconData icon, {
-    required String current,
-    required String total,
-    required double? progress,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(title, style: theme.textTheme.labelSmall?.copyWith(color: AppColors.secondary, letterSpacing: 1.0)),
-              Icon(icon, size: 16, color: AppColors.primary),
-            ],
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(current, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-                  const SizedBox(width: 4),
-                  Text(total, style: theme.textTheme.bodySmall?.copyWith(color: AppColors.secondary)),
-                ],
-              ),
-              const SizedBox(height: 8),
-              LinearProgressIndicator(
-                value: progress,
-                backgroundColor: AppColors.surfaceVariant,
-                valueColor: AlwaysStoppedAnimation<Color>(color),
-                borderRadius: BorderRadius.circular(4),
-                minHeight: 4,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 }

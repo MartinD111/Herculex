@@ -22,7 +22,16 @@
       "Read(//c/Users/marti/.gemini/antigravity-ide/scratch/swy_flutter/**)",
       "Bash(cd \"c:\\\\Users\\\\marti\\\\AMS d.o.o\\\\Herculex\" && git diff --no-index /dev/null lib/theme/colors.dart 2>/dev/null | head -50 || cat \"c:\\\\Users\\\\marti\\\\AMS d.o.o\\\\Herculex\\\\lib\\\\theme\\\\colors.dart\")",
       "Read(//dev/**)",
-      "Bash(flutter build *)"
+      "Bash(flutter build *)",
+      "Read(//c/c/Users/marti/AMS d.o.o/**)",
+      "Read(//c/c/Users/marti/AMS d.o.o/Herculex/**)",
+      "Read(//c/c/Users/marti/AMS d.o.o/Herculex/lib/**)",
+      "Bash(sed -i '497,633d' lib/features/dashboard/presentation/dashboard_view.dart)",
+      "Bash(sed -i '410,457d' lib/features/dashboard/presentation/dashboard_view.dart)",
+      "Bash(cd \"/c/Users/marti/AMS d.o.o/Herculex\" && sed -i '363,501d' lib/features/dashboard/presentation/dashboard_view.dart && tail -5 lib/features/dashboard/presentation/dashboard_view.dart && echo \"---lines---\" && wc -l lib/features/dashboard/presentation/dashboard_view.dart)"
+    ],
+    "additionalDirectories": [
+      "c:\\c\\Users\\marti\\AMS d.o.o\\Herculex\\lib\\features\\dashboard\\presentation"
     ]
   }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
-class PremiumButton extends StatelessWidget {
+import '../theme/haptics.dart';
+
+class PremiumButton extends StatefulWidget {
   final String text;
   final VoidCallback onTap;
   final bool isPrimary;
@@ -15,37 +17,59 @@ class PremiumButton extends StatelessWidget {
   });
 
   @override
+  State<PremiumButton> createState() => _PremiumButtonState();
+}
+
+class _PremiumButtonState extends State<PremiumButton> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final bgColor = isPrimary
+    final bgColor = widget.isPrimary
         ? theme.colorScheme.primary
-        : (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05));
-    final textColor = isPrimary ? Colors.white : theme.textTheme.bodyLarge?.color;
+        : (isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05));
+    final textColor =
+        widget.isPrimary ? Colors.white : theme.textTheme.bodyLarge?.color;
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(32),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(32),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, color: textColor, size: 20),
-              const SizedBox(width: 8),
-            ],
-            Text(
-              text,
-              style: theme.textTheme.labelLarge?.copyWith(color: textColor),
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTap: () {
+        Haptics.light();
+        widget.onTap();
+      },
+      child: AnimatedScale(
+        scale: _pressed ? 0.97 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeOut,
+        child: AnimatedOpacity(
+          opacity: _pressed ? 0.85 : 1.0,
+          duration: const Duration(milliseconds: 100),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(32),
             ),
-          ],
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (widget.icon != null) ...[
+                  Icon(widget.icon, color: textColor, size: 20),
+                  const SizedBox(width: 8),
+                ],
+                Text(
+                  widget.text,
+                  style: theme.textTheme.labelLarge?.copyWith(color: textColor),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

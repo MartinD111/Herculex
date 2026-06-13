@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../theme/colors.dart';
 import '../data/analytics_repository.dart';
 import 'analytics_providers.dart';
+import 'cns_recovery_cards.dart';
 import 'recovery_heatmap_widget.dart';
 
 class InsightsView extends ConsumerWidget {
@@ -28,6 +29,10 @@ class InsightsView extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
             const _RecoveryCard(),
+            const SizedBox(height: 24),
+            const RecoveryDetailCard(),
+            const SizedBox(height: 24),
+            const CnsTrendCard(),
             const SizedBox(height: 24),
             const _BalanceCard(),
             const SizedBox(height: 24),

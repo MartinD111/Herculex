@@ -18,9 +18,9 @@ class HerculexApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Herculex',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
+      theme: AppTheme.darkTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: ThemeMode.dark,
       routerConfig: router,
     );
   }

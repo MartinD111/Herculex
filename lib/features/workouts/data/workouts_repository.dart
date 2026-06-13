@@ -117,13 +117,20 @@ class WorkoutsRepository {
         .watchSingleOrNull();
   }
 
-  Future<int> startSession({String? notes}) async {
+  Future<int> startSession({String? notes, int? gymId}) async {
     return _db.into(_db.workoutSessions).insert(
           WorkoutSessionsCompanion.insert(
             startedAt: _clock.now(),
             notes: Value(notes),
+            gymId: Value(gymId),
           ),
         );
+  }
+
+  Future<void> setSessionGym(int sessionId, int? gymId) async {
+    await (_db.update(_db.workoutSessions)
+          ..where((t) => t.id.equals(sessionId)))
+        .write(WorkoutSessionsCompanion(gymId: Value(gymId)));
   }
 
   Future<void> endSession(int sessionId, {int? sessionRpe}) async {
@@ -165,6 +172,8 @@ class WorkoutsRepository {
   Future<int> addExerciseToSession({
     required int sessionId,
     required int exerciseId,
+    String? equipmentVariant,
+    String? machineConfigJson,
   }) async {
     final existing = await (_db.select(_db.workoutExercises)
           ..where((t) => t.sessionId.equals(sessionId)))
@@ -181,8 +190,81 @@ class WorkoutsRepository {
             exerciseId: exerciseId,
             orderIndex: nextIndex,
             targetRestSeconds: Value(exercise.defaultRestSeconds),
+            equipmentVariant: Value(equipmentVariant),
+            machineConfigJson: Value(machineConfigJson),
           ),
         );
+  }
+
+  /// Variant chosen at log time; null falls back to the catalog modality.
+  Future<void> setEquipmentVariant({
+    required int workoutExerciseId,
+    String? equipmentVariant,
+  }) async {
+    await (_db.update(_db.workoutExercises)
+          ..where((t) => t.id.equals(workoutExerciseId)))
+        .write(WorkoutExercisesCompanion(
+      equipmentVariant: Value(equipmentVariant),
+    ));
+  }
+
+  /// Stores the per-log machine settings and upserts the recallable saved
+  /// config for this exercise×gym (V2 §11).
+  Future<void> setMachineConfig({
+    required int workoutExerciseId,
+    required String settingsJson,
+    int? gymId,
+  }) async {
+    final we = await (_db.select(_db.workoutExercises)
+          ..where((t) => t.id.equals(workoutExerciseId)))
+        .getSingle();
+    await _db.transaction(() async {
+      await (_db.update(_db.workoutExercises)
+            ..where((t) => t.id.equals(workoutExerciseId)))
+          .write(WorkoutExercisesCompanion(
+        machineConfigJson: Value(settingsJson),
+      ));
+      final saved = await (_db.select(_db.machineSettings)
+            ..where((t) =>
+                t.exerciseId.equals(we.exerciseId) &
+                (gymId == null ? t.gymId.isNull() : t.gymId.equals(gymId))))
+          .getSingleOrNull();
+      if (saved == null) {
+        await _db.into(_db.machineSettings).insert(
+              MachineSettingsCompanion.insert(
+                exerciseId: we.exerciseId,
+                gymId: Value(gymId),
+                settingsJson: settingsJson,
+                updatedAt: Value(_clock.now()),
+              ),
+            );
+      } else {
+        await (_db.update(_db.machineSettings)
+              ..where((t) => t.id.equals(saved.id)))
+            .write(MachineSettingsCompanion(
+          settingsJson: Value(settingsJson),
+          updatedAt: Value(_clock.now()),
+        ));
+      }
+    });
+  }
+
+  /// Last saved machine config for this exercise at this gym (falling back to
+  /// the gym-agnostic config) — pre-fills the machine settings sheet.
+  Future<MachineSettingData?> recallMachineConfig({
+    required int exerciseId,
+    int? gymId,
+  }) async {
+    if (gymId != null) {
+      final atGym = await (_db.select(_db.machineSettings)
+            ..where((t) =>
+                t.exerciseId.equals(exerciseId) & t.gymId.equals(gymId)))
+          .getSingleOrNull();
+      if (atGym != null) return atGym;
+    }
+    return (_db.select(_db.machineSettings)
+          ..where((t) => t.exerciseId.equals(exerciseId) & t.gymId.isNull()))
+        .getSingleOrNull();
   }
 
   Future<void> removeWorkoutExercise(int workoutExerciseId) async {
@@ -210,6 +292,10 @@ class WorkoutsRepository {
     required int reps,
     int? rpeX10,
     bool isWarmup = false,
+    String setType = 'standard',
+    String? setTypeMetaJson,
+    double? bodyweightKg,
+    double? chainsKg,
   }) async {
     final existing = await (_db.select(_db.setEntries)
           ..where((t) => t.workoutExerciseId.equals(workoutExerciseId)))
@@ -223,6 +309,10 @@ class WorkoutsRepository {
             reps: reps,
             rpeX10: Value(rpeX10),
             isWarmup: Value(isWarmup),
+            setType: Value(setType),
+            setTypeMetaJson: Value(setTypeMetaJson),
+            bodyweightKg: Value(bodyweightKg),
+            chainsKg: Value(chainsKg),
           ),
         );
   }
@@ -234,6 +324,10 @@ class WorkoutsRepository {
     int? rpeX10,
     bool? isWarmup,
     bool? isCompleted,
+    String? setType,
+    String? setTypeMetaJson,
+    double? bodyweightKg,
+    double? chainsKg,
   }) async {
     await (_db.update(_db.setEntries)..where((t) => t.id.equals(setId))).write(
       SetEntriesCompanion(
@@ -243,6 +337,13 @@ class WorkoutsRepository {
         isWarmup: isWarmup == null ? const Value.absent() : Value(isWarmup),
         isCompleted: isCompleted == null ? const Value.absent() : Value(isCompleted),
         completedAt: isCompleted == true ? Value(_clock.now()) : const Value.absent(),
+        setType: setType == null ? const Value.absent() : Value(setType),
+        setTypeMetaJson: setTypeMetaJson == null
+            ? const Value.absent()
+            : Value(setTypeMetaJson),
+        bodyweightKg:
+            bodyweightKg == null ? const Value.absent() : Value(bodyweightKg),
+        chainsKg: chainsKg == null ? const Value.absent() : Value(chainsKg),
       ),
     );
   }

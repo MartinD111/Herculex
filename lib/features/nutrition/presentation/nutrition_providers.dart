@@ -7,7 +7,11 @@ import '../data/openfoodfacts_client.dart';
 import '../domain/daily_totals.dart';
 import '../domain/macro_targets.dart';
 import '../domain/meal.dart';
+import '../domain/carb_cycling.dart';
+import '../domain/target_resolver.dart';
+import '../data/carb_cycle_service.dart';
 import '../data/wear_sync_service.dart';
+import '../../analytics/presentation/analytics_providers.dart';
 
 
 final openFoodFactsClientProvider = Provider<OpenFoodFactsClient>((ref) {
@@ -43,10 +47,59 @@ final dailyTotalsProvider =
   return ref.watch(nutritionRepositoryProvider).watchDailyTotals(date);
 });
 
-final macroTargetsProvider = Provider<MacroTargets?>((ref) {
+/// Profile-derived baseline target (Mifflin-St Jeor). Used as the fallback
+/// when no day-specific rule applies.
+final baselineTargetsProvider = Provider<MacroTargets?>((ref) {
   final profile = ref.watch(profileProvider).asData?.value;
   if (profile == null) return null;
   return MacroTargets.fromProfile(profile);
+});
+
+final nutritionTargetsProvider =
+    StreamProvider<List<NutritionTargetData>>((ref) {
+  return ref.watch(nutritionRepositoryProvider).watchTargets();
+});
+
+final activeDietScheduleProvider =
+    StreamProvider<DietScheduleData?>((ref) {
+  return ref.watch(nutritionRepositoryProvider).watchActiveDietSchedule();
+});
+
+/// Effective target for the selected date (§19): day-specific rule resolution
+/// over training/rest/weekday/date scopes, then automated diet-schedule
+/// reduction, falling back to the profile baseline.
+final effectiveTargetsProvider =
+    FutureProvider.autoDispose.family<MacroTargets?, DateTime>((ref, date) async {
+  final repo = ref.watch(nutritionRepositoryProvider);
+  final rows = await ref.watch(nutritionTargetsProvider.future);
+  final schedule = await ref.watch(activeDietScheduleProvider.future);
+  final baseline = ref.watch(baselineTargetsProvider);
+  final isTrainingDay = await repo.trainedOn(date);
+
+  return TargetResolver.resolve(
+    rules: [
+      for (final r in rows)
+        TargetRule(
+          kcal: r.kcal,
+          proteinG: r.proteinG,
+          carbsG: r.carbsG,
+          fatG: r.fatG,
+          fiberG: r.fiberG,
+          appliesTo: r.appliesTo,
+        ),
+    ],
+    date: date,
+    isTrainingDay: isTrainingDay,
+    schedule: schedule == null
+        ? null
+        : DietScheduleRule(
+            startDate: parseDateIso(schedule.startDateIso),
+            reducePct: schedule.reducePct,
+            intervalDays: schedule.intervalDays,
+            active: schedule.active,
+          ),
+    fallback: baseline,
+  );
 });
 
 final foodSearchProvider =
@@ -81,6 +134,14 @@ final entriesByMealProvider = Provider.autoDispose
     }
     return out;
   });
+});
+
+/// Auto-generated carb-cycle levels (Mon→Sun) for the selected date's week,
+/// derived from the training snapshot (§19).
+final generatedCarbCycleProvider =
+    FutureProvider.autoDispose.family<List<CarbLevel>, DateTime>((ref, date) async {
+  final snapshot = await ref.watch(trainingSnapshotProvider.future);
+  return CarbCycleService.planForWeek(snapshot: snapshot, weekStart: date);
 });
 
 final wearSyncServiceProvider = Provider<WearSyncService>((ref) {

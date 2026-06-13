@@ -9,9 +9,14 @@ import '../features/auth/domain/app_user.dart';
 import '../features/auth/presentation/landing_view.dart';
 import '../features/auth/presentation/login_view.dart';
 import '../features/auth/presentation/splash_view.dart';
+import '../features/gyms/presentation/gyms_view.dart';
+import '../features/measurements/presentation/measurements_view.dart';
+import '../features/nutrition/presentation/nutrition_targets_view.dart';
 import '../features/onboarding/presentation/onboarding_view.dart';
+import '../features/programs/presentation/rotation_pools_view.dart';
 import '../features/profile/domain/profile.dart';
 import '../features/shell/main_scaffold.dart';
+import '../features/workouts/presentation/micro_workouts_view.dart';
 import '../features/workouts/presentation/workout_history_view.dart';
 import 'providers.dart';
 
@@ -80,6 +85,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           sessionId: int.parse(state.pathParameters['id']!),
         ),
       ),
+      GoRoute(path: '/measurements', builder: (_, _) => const MeasurementsView()),
+      GoRoute(path: '/gyms', builder: (_, _) => const GymsView()),
+      GoRoute(path: '/micro-workouts', builder: (_, _) => const MicroWorkoutsView()),
+      GoRoute(path: '/nutrition-targets', builder: (_, _) => const NutritionTargetsView()),
+      GoRoute(path: '/rotation-pools', builder: (_, _) => const RotationPoolsView()),
     ],
   );
 });

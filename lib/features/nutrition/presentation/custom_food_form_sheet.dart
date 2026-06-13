@@ -37,12 +37,15 @@ class _CustomFoodFormSheetState extends ConsumerState<CustomFoodFormSheet> {
   final _carbs = TextEditingController();
   final _fat = TextEditingController();
   final _servingG = TextEditingController();
+  final _sodium = TextEditingController();
+  final _potassium = TextEditingController();
+  final _cholesterol = TextEditingController();
   bool _saving = false;
   String? _error;
 
   @override
   void dispose() {
-    for (final c in [_name, _brand, _kcal, _protein, _carbs, _fat, _servingG]) {
+    for (final c in [_name, _brand, _kcal, _protein, _carbs, _fat, _servingG, _sodium, _potassium, _cholesterol]) {
       c.dispose();
     }
     super.dispose();
@@ -64,6 +67,9 @@ class _CustomFoodFormSheetState extends ConsumerState<CustomFoodFormSheet> {
           carbsPer100g: double.tryParse(_carbs.text.trim()) ?? 0,
           fatPer100g: double.tryParse(_fat.text.trim()) ?? 0,
           servingGrams: double.tryParse(_servingG.text.trim()),
+          sodiumMgPer100g: double.tryParse(_sodium.text.trim()),
+          potassiumMgPer100g: double.tryParse(_potassium.text.trim()),
+          cholesterolMgPer100g: double.tryParse(_cholesterol.text.trim()),
         );
     if (!mounted) return;
     Navigator.of(context).pop(food);
@@ -118,6 +124,25 @@ class _CustomFoodFormSheetState extends ConsumerState<CustomFoodFormSheet> {
             ),
             const SizedBox(height: 14),
             _Field(label: 'Default serving (g)', controller: _servingG, numeric: true),
+            const SizedBox(height: 20),
+            Text(
+              'MINERALS (optional, per 100g)',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: AppColors.secondary,
+                    letterSpacing: 0.8,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(child: _Field(label: 'Sodium mg', controller: _sodium, numeric: true)),
+                const SizedBox(width: 12),
+                Expanded(child: _Field(label: 'Potassium mg', controller: _potassium, numeric: true)),
+                const SizedBox(width: 12),
+                Expanded(child: _Field(label: 'Cholesterol mg', controller: _cholesterol, numeric: true)),
+              ],
+            ),
             if (_error != null) ...[
               const SizedBox(height: 12),
               Container(

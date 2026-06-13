@@ -42,6 +42,7 @@ SetEntryData _set(int id, int weId, DateTime completedAt, {int rpe = 8}) =>
       isWarmup: false,
       isCompleted: true,
       completedAt: completedAt,
+      setType: 'standard',
     );
 
 ExerciseMuscleData _m(int id, int exId, String muscle, String role,

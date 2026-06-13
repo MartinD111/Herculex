@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/local/database.dart';
 import '../../../theme/colors.dart';
+import '../../../theme/haptics.dart';
 import '../../../widgets/premium_button.dart';
 import '../domain/meal.dart';
 import 'nutrition_providers.dart';
@@ -78,6 +79,7 @@ class _LogEntrySheetState extends ConsumerState<LogEntrySheet> {
   Future<void> _save() async {
     final value = double.tryParse(_quantity.text.trim());
     if (value == null || value <= 0) return;
+    Haptics.success();
     setState(() => _saving = true);
     final repo = ref.read(nutritionRepositoryProvider);
     if (widget.food != null) {
@@ -159,7 +161,10 @@ class _LogEntrySheetState extends ConsumerState<LogEntrySheet> {
                 _MealChip(
                   label: m.label,
                   selected: _meal == m,
-                  onTap: () => setState(() => _meal = m),
+                  onTap: () {
+                    Haptics.selection();
+                    setState(() => _meal = m);
+                  },
                 ),
             ],
           ),

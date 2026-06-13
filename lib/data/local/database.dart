@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
+import 'accessory_seed.dart';
 import 'exercise_importer.dart';
 import 'tables.dart';
 
@@ -33,6 +34,22 @@ part 'database.g.dart';
     WorkoutFolders,
     WorkoutTemplates,
     TemplateExercises,
+    Gyms,
+    Accessories,
+    Bands,
+    SetAccessories,
+    SetBands,
+    MachineSettings,
+    BodyMeasurements,
+    ProgressPhotos,
+    ExerciseRotations,
+    RotationMembers,
+    MicroWorkouts,
+    ExerciseProgressions,
+    FoodMicros,
+    NutritionTargets,
+    DietSchedules,
+    CarbCyclePlans,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -40,13 +57,14 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (m) async {
           await m.createAll();
           await ExerciseImporter.runFromAsset(this);
+          await AccessorySeed.run(this);
         },
         onUpgrade: (m, from, to) async {
           if (from < 2) {
@@ -100,6 +118,66 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(workoutFolders);
             await m.createTable(workoutTemplates);
             await m.createTable(templateExercises);
+          }
+          if (from < 10) {
+            // V2 logging foundation: gyms, accessories, bands, set variants,
+            // machine configs, body measurements, progress photos.
+            await m.createTable(gyms);
+            await m.createTable(accessories);
+            await m.createTable(bands);
+            await m.createTable(setAccessories);
+            await m.createTable(setBands);
+            await m.createTable(machineSettings);
+            await m.createTable(bodyMeasurements);
+            await m.createTable(progressPhotos);
+            await m.addColumn(workoutSessions, workoutSessions.gymId);
+            await m.addColumn(
+                workoutExercises, workoutExercises.equipmentVariant);
+            await m.addColumn(
+                workoutExercises, workoutExercises.machineConfigJson);
+            await m.addColumn(setEntries, setEntries.setType);
+            await m.addColumn(setEntries, setEntries.setTypeMetaJson);
+            await m.addColumn(setEntries, setEntries.bodyweightKg);
+            await m.addColumn(setEntries, setEntries.chainsKg);
+            await customStatement(
+                'CREATE INDEX IF NOT EXISTS idx_set_accessories_set '
+                'ON set_accessories (set_entry_id)');
+            await customStatement(
+                'CREATE INDEX IF NOT EXISTS idx_set_bands_set '
+                'ON set_bands (set_entry_id)');
+            await customStatement(
+                'CREATE INDEX IF NOT EXISTS idx_body_measurements_date '
+                'ON body_measurements (date_iso, metric)');
+            await AccessorySeed.run(this);
+          }
+          if (from < 11) {
+            // Periodization, rotation, micro workouts, progression overrides.
+            await m.createTable(exerciseRotations);
+            await m.createTable(rotationMembers);
+            await m.createTable(microWorkouts);
+            await m.createTable(exerciseProgressions);
+            await m.addColumn(programs, programs.periodizationModel);
+            await m.addColumn(programWeeks, programWeeks.blockPhase);
+            await m.addColumn(programWeeks, programWeeks.intensityFactor);
+            await m.addColumn(
+                programDayExercises, programDayExercises.rotationId);
+            await m.addColumn(programDayExercises, programDayExercises.setType);
+            await m.addColumn(
+                programDayExercises, programDayExercises.percentOf1Rm);
+            await m.addColumn(
+                programDayExercises, programDayExercises.equipmentVariant);
+            await m.addColumn(workoutSessions, workoutSessions.microWorkoutId);
+          }
+          if (from < 12) {
+            // Nutrition expansion: micros, day-specific targets, diet
+            // automation, carb cycling.
+            await m.addColumn(foods, foods.sodiumMgPer100g);
+            await m.addColumn(foods, foods.potassiumMgPer100g);
+            await m.addColumn(foods, foods.cholesterolMgPer100g);
+            await m.createTable(foodMicros);
+            await m.createTable(nutritionTargets);
+            await m.createTable(dietSchedules);
+            await m.createTable(carbCyclePlans);
           }
         },
       );

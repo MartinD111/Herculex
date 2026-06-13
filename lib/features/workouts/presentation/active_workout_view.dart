@@ -5,6 +5,8 @@ import '../../../data/local/database.dart';
 import '../../../theme/colors.dart';
 import '../../../widgets/premium_button.dart';
 import 'active_exercise_card.dart';
+import 'dynamic_workout_view.dart';
+import 'equipment_variant_sheet.dart';
 import 'exercise_picker_sheet.dart';
 import 'rest_timer_banner.dart';
 import 'workouts_providers.dart';
@@ -19,6 +21,11 @@ class ActiveWorkoutView extends ConsumerWidget {
     final sessionExercises = ref.watch(sessionExercisesProvider(session.id));
     final catalog = ref.watch(exerciseCatalogProvider(null));
     final repo = ref.watch(workoutsRepositoryProvider);
+
+    // One-tap switch between Classic and Dynamic full-screen mode (§14).
+    if (ref.watch(dynamicWorkoutModeProvider)) {
+      return DynamicWorkoutView(session: session);
+    }
 
     return Column(
       children: [
@@ -37,6 +44,12 @@ class ActiveWorkoutView extends ConsumerWidget {
                     ),
                   ],
                 ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.fullscreen),
+                tooltip: 'Dynamic mode',
+                onPressed: () =>
+                    ref.read(dynamicWorkoutModeProvider.notifier).state = true,
               ),
               IconButton(
                 icon: const Icon(Icons.close),
@@ -104,12 +117,17 @@ class ActiveWorkoutView extends ConsumerWidget {
                     isPrimary: false,
                     onTap: () async {
                       final picked = await ExercisePickerSheet.show(context);
-                      if (picked != null) {
-                        await repo.addExerciseToSession(
-                          sessionId: session.id,
-                          exerciseId: picked.id,
-                        );
-                      }
+                      if (picked == null || !context.mounted) return;
+                      // Hevy-style flow (§26): immediately ask which
+                      // equipment, store the variant on the log entry.
+                      final variant =
+                          await EquipmentVariantSheet.show(context, picked);
+                      if (variant == null) return;
+                      await repo.addExerciseToSession(
+                        sessionId: session.id,
+                        exerciseId: picked.id,
+                        equipmentVariant: variant,
+                      );
                     },
                   ),
                 ),

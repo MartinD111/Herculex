@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../app/providers.dart';
 import '../../../theme/colors.dart';
@@ -305,6 +306,27 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
             icon: Icons.dark_mode_rounded,
             label: 'Theme',
             trailing: _ThemeToggle(),
+          ),
+          _SettingsDivider(),
+          _SettingsTile(
+            icon: Icons.straighten,
+            label: 'Body Measurements',
+            trailing: Icon(Icons.chevron_right, color: AppColors.onSurfaceVariant),
+            onTap: () => context.push('/measurements'),
+          ),
+          _SettingsDivider(),
+          _SettingsTile(
+            icon: Icons.location_on_outlined,
+            label: 'My Gyms',
+            trailing: Icon(Icons.chevron_right, color: AppColors.onSurfaceVariant),
+            onTap: () => context.push('/gyms'),
+          ),
+          _SettingsDivider(),
+          _SettingsTile(
+            icon: Icons.task_alt,
+            label: 'Micro Workouts',
+            trailing: Icon(Icons.chevron_right, color: AppColors.onSurfaceVariant),
+            onTap: () => context.push('/micro-workouts'),
           ),
           _SettingsDivider(),
           _SettingsTile(

@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../data/local/database.dart';
 import '../../../theme/colors.dart';
 import '../../../widgets/premium_button.dart';
+import '../../gyms/presentation/gym_picker_sheet.dart';
 import 'active_workout_view.dart';
 import 'templates_view.dart';
 import 'workouts_providers.dart';
@@ -67,7 +68,12 @@ class _WorkoutsLandingState extends ConsumerState<_WorkoutsLanding>
                   text: 'Start Empty Workout',
                   icon: Icons.play_arrow,
                   onTap: () async {
-                    await ref.read(workoutsRepositoryProvider).startSession();
+                    // Multi-gym (§10): pick the gym when more than one exists.
+                    final gym = await GymPickerSheet.resolve(context, ref);
+                    if (gym.cancelled) return;
+                    await ref
+                        .read(workoutsRepositoryProvider)
+                        .startSession(gymId: gym.gymId);
                   },
                 ),
                 const SizedBox(height: 20),

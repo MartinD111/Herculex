@@ -5,8 +5,8 @@ import 'package:intl/intl.dart';
 import '../../../theme/colors.dart';
 import '../../../widgets/glass_container.dart';
 import '../../../widgets/premium_button.dart';
+import '../domain/periodization.dart';
 import 'programs_providers.dart';
-import '../../../data/local/database.dart';
 
 
 class BlockBuilderView extends ConsumerStatefulWidget {
@@ -53,8 +53,8 @@ class _BlockBuilderViewState extends ConsumerState<BlockBuilderView> {
     "Full Body Metabolic 🏆",
   ];
 
-  // Step 3 State: Progression Strategy
-  String _progressionStrategy = 'volume'; // volume, intensity, dynamic
+  // Step 3 State: Periodization Model
+  PeriodizationModel _periodizationModel = PeriodizationModel.block;
 
   // Step 4 State: Deload / Vacation
   DateTimeRange? _vacationRange;
@@ -405,57 +405,39 @@ class _BlockBuilderViewState extends ConsumerState<BlockBuilderView> {
     );
   }
 
-  // ── Step 3: Progression Strategy ──
+  // ── Step 3: Periodization Model ──
   Widget _buildStep3Progression(ThemeData theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("PROGRESSION ENGINE", style: theme.textTheme.displayMedium),
+        Text("PERIODIZATION", style: theme.textTheme.displayMedium),
         const SizedBox(height: 8),
-        Text("Select your macro periodization progression archetype.", style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.secondary)),
+        Text("Select how intensity and volume progress week-to-week.", style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.secondary)),
         const SizedBox(height: 32),
-        _buildStrategyOption(
-          'volume',
-          "Volume Accumulation",
-          "Starts with moderate sets/reps and adds volume each week. Best for hypertrophy.",
-          [35, 45, 55, 20], // mini-graph bars
-          theme,
-        ),
-        const SizedBox(height: 16),
-        _buildStrategyOption(
-          'intensity',
-          "Intensity Peaking",
-          "Maintains lower volume while systematically increasing weight. Best for strength.",
-          [20, 30, 45, 60], // mini-graph line
-          theme,
-        ),
-        const SizedBox(height: 16),
-        _buildStrategyOption(
-          'dynamic',
-          "Dynamic Progression",
-          "Volume and weight adapt daily based on your sleep, cycle, and readiness score.",
-          null, // animated pulse representation
-          theme,
-        ),
+        for (final model in PeriodizationModel.values) ...[
+          _buildModelOption(model, theme),
+          const SizedBox(height: 12),
+        ],
       ],
     );
   }
 
-  Widget _buildStrategyOption(
-    String strategy,
-    String title,
-    String desc,
-    List<double>? graphPoints,
-    ThemeData theme,
-  ) {
-    final isSelected = _progressionStrategy == strategy;
+  static const _modelDescriptions = {
+    PeriodizationModel.none: 'Flat load across all weeks. You control progression manually.',
+    PeriodizationModel.linear: 'Intensity rises ~2.5%/week; volume tapers. Deload every 4th week.',
+    PeriodizationModel.concurrent: 'All qualities trained simultaneously with a heavy/medium/light wave.',
+    PeriodizationModel.block: 'Accumulation → Transmutation → Realization. High volume peaking to high intensity.',
+    PeriodizationModel.maxEffort: 'Westside-style: work up to a heavy single every session; rotate the lift.',
+  };
+
+  Widget _buildModelOption(PeriodizationModel model, ThemeData theme) {
+    final isSelected = _periodizationModel == model;
+    final preview = Periodization.plan(model, 8)
+        .map((w) => w.intensityFactor * 60)
+        .toList();
 
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          _progressionStrategy = strategy;
-        });
-      },
+      onTap: () => setState(() => _periodizationModel = model),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -473,28 +455,17 @@ class _BlockBuilderViewState extends ConsumerState<BlockBuilderView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                  Text(model.label, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 6),
-                  Text(desc, style: theme.textTheme.bodySmall?.copyWith(color: AppColors.secondary)),
+                  Text(_modelDescriptions[model]!, style: theme.textTheme.bodySmall?.copyWith(color: AppColors.secondary)),
                 ],
               ),
             ),
             const SizedBox(width: 16),
-            if (graphPoints != null)
-              CustomPaint(
-                size: const Size(60, 40),
-                painter: _MiniGraphPainter(graphPoints, isSelected ? AppColors.primary : AppColors.secondary),
-              )
-            else
-              Container(
-                width: 60,
-                height: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isSelected ? AppColors.primary.withValues(alpha: 0.2) : AppColors.surfaceVariant,
-                ),
-                child: Icon(Icons.online_prediction, color: isSelected ? AppColors.primary : AppColors.secondary),
-              ),
+            CustomPaint(
+              size: const Size(60, 40),
+              painter: _MiniGraphPainter(preview, isSelected ? AppColors.primary : AppColors.secondary),
+            ),
           ],
         ),
       ),
@@ -590,11 +561,12 @@ class _BlockBuilderViewState extends ConsumerState<BlockBuilderView> {
 
     // 1. Create program
     final id = await repo.createProgram(
-      name: "$_selectedWeeks-Week Progression",
-      description: "Periodized $_progressionStrategy progression block.",
+      name: "$_selectedWeeks-Week ${_periodizationModel.label}",
+      description: "${_periodizationModel.label} periodization block.",
       weeks: _selectedWeeks,
       type: "block",
-      progressionStrategy: _progressionStrategy,
+      progressionStrategy: "volume",
+      periodizationModel: _periodizationModel.id,
     );
 
     // 2. Add skeleton days

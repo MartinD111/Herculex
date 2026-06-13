@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../data/local/database.dart';
@@ -18,8 +19,11 @@ class NutritionView extends ConsumerWidget {
     final theme = Theme.of(context);
     final date = ref.watch(selectedDateProvider);
     final totalsAsync = ref.watch(dailyTotalsProvider(date));
+    final totals = totalsAsync.asData?.value ?? DailyTotals.empty;
     final entriesByMeal = ref.watch(entriesByMealProvider(date));
-    final targets = ref.watch(macroTargetsProvider);
+    // Day-specific / diet-scheduled effective target (§19); baseline fallback.
+    final targets = ref.watch(effectiveTargetsProvider(date)).asData?.value ??
+        ref.watch(baselineTargetsProvider);
 
     return Scaffold(
       body: SafeArea(
@@ -31,7 +35,7 @@ class NutritionView extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: MacroRings(
-                totals: totalsAsync.asData?.value ?? DailyTotals.empty,
+                totals: totals,
                 targets: targets,
               ),
             ),
@@ -43,6 +47,8 @@ class NutritionView extends ConsumerWidget {
                   style: theme.textTheme.bodySmall?.copyWith(color: AppColors.secondary),
                 ),
               ),
+            if (totals.hasMicros)
+              _MineralsRow(totals: totals, theme: theme),
             const SizedBox(height: 24),
             entriesByMeal.when(
               data: (byMeal) => Column(
@@ -106,6 +112,11 @@ class NutritionView extends ConsumerWidget {
               ? null
               : () => ref.read(selectedDateProvider.notifier).state =
                   DateUtils.addDaysToDate(date, 1),
+        ),
+        IconButton(
+          icon: const Icon(Icons.tune),
+          tooltip: 'Targets & dieting',
+          onPressed: () => context.push('/nutrition-targets'),
         ),
       ],
     );
@@ -199,6 +210,7 @@ class _EntryTile extends ConsumerWidget {
               display == null ? '' : '${display.kcal.toStringAsFixed(0)} kcal',
               style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
+            onTap: display == null ? null : () => _showEntryDetail(context, theme, display),
           ),
         );
       },
@@ -212,7 +224,55 @@ class _EntryTile extends ConsumerWidget {
     final subtitle = entry.foodId != null
         ? '${(entry.gramsOverride ?? 0).toStringAsFixed(0)} g'
         : '${entry.servings.toStringAsFixed(entry.servings.truncateToDouble() == entry.servings ? 0 : 1)} serv';
-    return _EntryDisplay(name: name, subtitle: subtitle, kcal: macros.kcal);
+    return _EntryDisplay(name: name, subtitle: subtitle, kcal: macros.kcal,
+        sodiumMg: macros.sodiumMg, potassiumMg: macros.potassiumMg, cholesterolMg: macros.cholesterolMg);
+  }
+
+  void _showEntryDetail(BuildContext context, ThemeData theme, _EntryDisplay display) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        final hasMicros = display.sodiumMg > 0 || display.potassiumMg > 0 || display.cholesterolMg > 0;
+        return Container(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+          decoration: BoxDecoration(
+            color: theme.bottomSheetTheme.backgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.outlineVariant.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(display.name, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+              Text(display.subtitle, style: theme.textTheme.bodySmall?.copyWith(color: AppColors.secondary)),
+              const SizedBox(height: 20),
+              Text('${display.kcal.toStringAsFixed(0)} kcal',
+                  style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: AppColors.primary)),
+              if (hasMicros) ...[
+                const SizedBox(height: 16),
+                Text('MINERALS', style: theme.textTheme.labelSmall?.copyWith(color: AppColors.secondary, letterSpacing: 1.0)),
+                const SizedBox(height: 8),
+                microRow('Sodium', display.sodiumMg, 'mg', theme),
+                microRow('Potassium', display.potassiumMg, 'mg', theme),
+                microRow('Cholesterol', display.cholesterolMg, 'mg', theme),
+              ],
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Future<String> _resolveName(WidgetRef ref) async {
@@ -253,5 +313,79 @@ class _EntryDisplay {
   final String name;
   final String subtitle;
   final double kcal;
-  _EntryDisplay({required this.name, required this.subtitle, required this.kcal});
+  final double sodiumMg;
+  final double potassiumMg;
+  final double cholesterolMg;
+  _EntryDisplay({
+    required this.name,
+    required this.subtitle,
+    required this.kcal,
+    this.sodiumMg = 0,
+    this.potassiumMg = 0,
+    this.cholesterolMg = 0,
+  });
+}
+
+class _MineralsRow extends StatefulWidget {
+  final DailyTotals totals;
+  final ThemeData theme;
+  const _MineralsRow({required this.totals, required this.theme});
+
+  @override
+  State<_MineralsRow> createState() => _MineralsRowState();
+}
+
+class _MineralsRowState extends State<_MineralsRow> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = widget.totals;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+      child: GestureDetector(
+        onTap: () => setState(() => _expanded = !_expanded),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceContainer,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.science_outlined, size: 14, color: AppColors.secondary),
+                  const SizedBox(width: 6),
+                  Text('MINERALS', style: widget.theme.textTheme.labelSmall?.copyWith(color: AppColors.secondary, letterSpacing: 1.0)),
+                  const Spacer(),
+                  Icon(_expanded ? Icons.expand_less : Icons.expand_more, size: 16, color: AppColors.secondary),
+                ],
+              ),
+              if (_expanded) ...[
+                const SizedBox(height: 8),
+                microRow('Sodium', t.sodiumMg, 'mg', widget.theme),
+                microRow('Potassium', t.potassiumMg, 'mg', widget.theme),
+                microRow('Cholesterol', t.cholesterolMg, 'mg', widget.theme),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Widget microRow(String label, double value, String unit, ThemeData theme) {
+  if (value <= 0) return const SizedBox.shrink();
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 3),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: theme.textTheme.bodySmall?.copyWith(color: AppColors.secondary)),
+        Text('${value.toStringAsFixed(0)} $unit', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600)),
+      ],
+    ),
+  );
 }

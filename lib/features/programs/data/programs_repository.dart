@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../../core/clock.dart';
 import '../../../data/local/database.dart';
+import '../domain/periodization.dart';
 
 class ProgramsRepository {
   final AppDatabase _db;
@@ -17,8 +18,10 @@ class ProgramsRepository {
     required int weeks,
     required String type, // rotating | block
     required String progressionStrategy, // volume | intensity | dynamic
+    String? periodizationModel, // none | linear | concurrent | block | max_effort
   }) async {
     return _db.transaction(() async {
+      final model = PeriodizationModel.fromId(periodizationModel);
       final programId = await _db.into(_db.programs).insert(
             ProgramsCompanion.insert(
               name: name,
@@ -26,19 +29,24 @@ class ProgramsRepository {
               weeks: Value(weeks),
               type: Value(type),
               progressionStrategy: Value(progressionStrategy),
+              periodizationModel: Value(model.id),
               createdByUser: const Value(true),
               archived: const Value(false),
             ),
           );
 
-      // Materialise default template weeks
+      // Materialise template weeks with periodization prescription.
       final totalWeeks = type == 'rotating' ? 1 : weeks;
+      final prescriptions = Periodization.plan(model, totalWeeks);
       for (int i = 0; i < totalWeeks; i++) {
+        final p = prescriptions[i];
         await _db.into(_db.programWeeks).insert(
               ProgramWeeksCompanion.insert(
                 programId: programId,
                 weekIndex: i,
-                adjustmentFactor: const Value(1.0),
+                adjustmentFactor: Value(p.volumeFactor),
+                intensityFactor: Value(p.intensityFactor),
+                blockPhase: Value(p.blockPhase),
               ),
             );
       }

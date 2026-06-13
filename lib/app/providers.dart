@@ -8,6 +8,10 @@ import '../features/profile/data/local_profile_repository.dart';
 import '../features/profile/domain/profile.dart';
 
 import '../features/auth/data/firebase_auth_repository.dart';
+import '../features/gyms/data/gyms_repository.dart';
+import '../features/measurements/data/measurements_repository.dart';
+import '../features/workouts/data/accessories_repository.dart';
+import '../features/workouts/data/exercise_progressions_repository.dart';
 import '../data/sync/sync_engine.dart';
 
 export '../core/clock.dart' show clockProvider;
@@ -58,4 +62,21 @@ final appDatabaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
   ref.onDispose(db.close);
   return db;
+});
+
+final gymsRepositoryProvider = Provider<GymsRepository>((ref) {
+  return GymsRepository(ref.watch(appDatabaseProvider));
+});
+
+final accessoriesRepositoryProvider = Provider<AccessoriesRepository>((ref) {
+  return AccessoriesRepository(ref.watch(appDatabaseProvider));
+});
+
+final measurementsRepositoryProvider = Provider<MeasurementsRepository>((ref) {
+  return MeasurementsRepository(ref.watch(appDatabaseProvider));
+});
+
+final exerciseProgressionsRepositoryProvider =
+    Provider<ExerciseProgressionsRepository>((ref) {
+  return ExerciseProgressionsRepository(ref.watch(appDatabaseProvider));
 });

@@ -10,7 +10,6 @@ import 'remote_food.dart';
 class NutritionRepository {
   final AppDatabase _db;
   final OpenFoodFactsClient _off;
-  // ignore: unused_field
   final Clock _clock;
 
   NutritionRepository(this._db, this._off, this._clock);
@@ -101,6 +100,9 @@ class NutritionRepository {
     double fatPer100g = 0,
     double? servingGrams,
     String? servingLabel,
+    double? sodiumMgPer100g,
+    double? potassiumMgPer100g,
+    double? cholesterolMgPer100g,
   }) async {
     final id = await _db.into(_db.foods).insert(
           FoodsCompanion.insert(
@@ -114,6 +116,9 @@ class NutritionRepository {
             servingLabel: Value(servingLabel),
             source: const Value('local'),
             isCustom: const Value(true),
+            sodiumMgPer100g: Value(sodiumMgPer100g),
+            potassiumMgPer100g: Value(potassiumMgPer100g),
+            cholesterolMgPer100g: Value(cholesterolMgPer100g),
           ),
         );
     return (_db.select(_db.foods)..where((t) => t.id.equals(id))).getSingle();
@@ -195,6 +200,9 @@ class NutritionRepository {
         carbsG: food.carbsPer100g * factor,
         fatG: food.fatPer100g * factor,
         fiberG: (food.fiberPer100g ?? 0) * factor,
+        sodiumMg: (food.sodiumMgPer100g ?? 0) * factor,
+        potassiumMg: (food.potassiumMgPer100g ?? 0) * factor,
+        cholesterolMg: (food.cholesterolMgPer100g ?? 0) * factor,
       );
     }
 
@@ -205,6 +213,9 @@ class NutritionRepository {
       carbsG: totals.carbsG / servings,
       fatG: totals.fatG / servings,
       fiberG: totals.fiberG / servings,
+      sodiumMg: totals.sodiumMg / servings,
+      potassiumMg: totals.potassiumMg / servings,
+      cholesterolMg: totals.cholesterolMg / servings,
     );
   }
 
@@ -231,6 +242,11 @@ class NutritionRepository {
             foodId: Value(foodId),
             servings: const Value(1),
             gramsOverride: Value(grams),
+            // §22 fix: stamp loggedAt from the local Clock so it agrees with
+            // the local-derived dateIso. SQLite's default CURRENT_TIMESTAMP is
+            // UTC, which drifts entries onto the wrong calendar day for users
+            // behind UTC and corrupts recentFoods' loggedAt cutoff.
+            loggedAt: Value(_clock.now()),
           ),
         );
   }
@@ -247,6 +263,7 @@ class NutritionRepository {
             meal: meal.name,
             recipeId: Value(recipeId),
             servings: Value(servings),
+            loggedAt: Value(_clock.now()),
           ),
         );
   }
@@ -269,6 +286,9 @@ class NutritionRepository {
         carbsG: food.carbsPer100g * f,
         fatG: food.fatPer100g * f,
         fiberG: (food.fiberPer100g ?? 0) * f,
+        sodiumMg: (food.sodiumMgPer100g ?? 0) * f,
+        potassiumMg: (food.potassiumMgPer100g ?? 0) * f,
+        cholesterolMg: (food.cholesterolMgPer100g ?? 0) * f,
       );
     }
     if (entry.recipeId != null) {
@@ -279,6 +299,9 @@ class NutritionRepository {
         carbsG: per.carbsG * entry.servings,
         fatG: per.fatG * entry.servings,
         fiberG: per.fiberG * entry.servings,
+        sodiumMg: per.sodiumMg * entry.servings,
+        potassiumMg: per.potassiumMg * entry.servings,
+        cholesterolMg: per.cholesterolMg * entry.servings,
       );
     }
     return DailyTotals.empty;
@@ -296,15 +319,140 @@ class NutritionRepository {
           carbsG: m.carbsG,
           fatG: m.fatG,
           fiberG: m.fiberG,
+          sodiumMg: m.sodiumMg,
+          potassiumMg: m.potassiumMg,
+          cholesterolMg: m.cholesterolMg,
         );
       }
       yield totals;
     }
   }
 
+  // ── Nutrition targets, diet schedules, carb plans (v12, §19) ────────────
+
+  Stream<List<NutritionTargetData>> watchTargets() {
+    return _db.select(_db.nutritionTargets).watch();
+  }
+
+  /// Upserts the target for a scope key (one row per [appliesTo]). Conflict
+  /// target is the [appliesTo] unique key, not the primary key, so re-saving
+  /// the same scope updates rather than throwing.
+  Future<void> upsertTarget({
+    required String label,
+    required String appliesTo,
+    required int kcal,
+    required int proteinG,
+    required int carbsG,
+    required int fatG,
+    int? fiberG,
+  }) async {
+    await _db.into(_db.nutritionTargets).insert(
+          NutritionTargetsCompanion.insert(
+            label: label,
+            appliesTo: Value(appliesTo),
+            kcal: kcal,
+            proteinG: proteinG,
+            carbsG: carbsG,
+            fatG: fatG,
+            fiberG: Value(fiberG),
+          ),
+          onConflict: DoUpdate(
+            (old) => NutritionTargetsCompanion.custom(
+              label: Constant(label),
+              kcal: Constant(kcal),
+              proteinG: Constant(proteinG),
+              carbsG: Constant(carbsG),
+              fatG: Constant(fatG),
+              fiberG: fiberG == null ? const Constant(null) : Constant(fiberG),
+            ),
+            target: [_db.nutritionTargets.appliesTo],
+          ),
+        );
+  }
+
+  Future<void> deleteTarget(int id) async {
+    await (_db.delete(_db.nutritionTargets)..where((t) => t.id.equals(id))).go();
+  }
+
+  Stream<DietScheduleData?> watchActiveDietSchedule() {
+    return (_db.select(_db.dietSchedules)
+          ..where((t) => t.active.equals(true))
+          ..orderBy([
+            (t) => OrderingTerm(expression: t.startDateIso, mode: OrderingMode.desc)
+          ])
+          ..limit(1))
+        .watchSingleOrNull();
+  }
+
+  Future<int> startDietSchedule({
+    required DateTime startDate,
+    required double reducePct,
+    required int intervalDays,
+  }) async {
+    return _db.transaction(() async {
+      // Only one active schedule at a time.
+      await (_db.update(_db.dietSchedules)..where((t) => t.active.equals(true)))
+          .write(const DietSchedulesCompanion(active: Value(false)));
+      return _db.into(_db.dietSchedules).insert(
+            DietSchedulesCompanion.insert(
+              startDateIso: dateIso(startDate),
+              reducePct: reducePct,
+              intervalDays: intervalDays,
+            ),
+          );
+    });
+  }
+
+  Future<void> stopDietSchedules() async {
+    await (_db.update(_db.dietSchedules)..where((t) => t.active.equals(true)))
+        .write(const DietSchedulesCompanion(active: Value(false)));
+  }
+
+  Future<void> saveCarbCyclePlan({
+    required DateTime weekStart,
+    required String dayLevelsJson,
+    bool auto = true,
+  }) async {
+    await _db.into(_db.carbCyclePlans).insert(
+          CarbCyclePlansCompanion.insert(
+            weekStartIso: dateIso(weekStart),
+            dayLevelsJson: dayLevelsJson,
+            auto: Value(auto),
+          ),
+          onConflict: DoUpdate(
+            (old) => CarbCyclePlansCompanion.custom(
+              dayLevelsJson: Constant(dayLevelsJson),
+              auto: Constant(auto),
+            ),
+            target: [_db.carbCyclePlans.weekStartIso],
+          ),
+        );
+  }
+
+  Future<CarbCyclePlanData?> carbCyclePlanForWeek(DateTime weekStart) {
+    return (_db.select(_db.carbCyclePlans)
+          ..where((t) => t.weekStartIso.equals(dateIso(weekStart))))
+        .getSingleOrNull();
+  }
+
+  /// Whether the user trained on [date] (any completed session that day) —
+  /// drives training-day vs rest-day target selection.
+  Future<bool> trainedOn(DateTime date) async {
+    final from = DateTime(date.year, date.month, date.day);
+    final to = from.add(const Duration(days: 1));
+    final row = await (_db.select(_db.workoutSessions)
+          ..where((t) =>
+              t.endedAt.isNotNull() &
+              t.startedAt.isBiggerOrEqualValue(from) &
+              t.startedAt.isSmallerThanValue(to))
+          ..limit(1))
+        .getSingleOrNull();
+    return row != null;
+  }
+
   /// Top N foods most frequently logged in the last 30 days.
   Future<List<FoodData>> recentFoods({int limit = 20}) async {
-    final cutoff = DateTime.now().subtract(const Duration(days: 30));
+    final cutoff = _clock.now().subtract(const Duration(days: 30));
     final entries = await (_db.select(_db.foodEntries)
           ..where((t) =>
               t.foodId.isNotNull() & t.loggedAt.isBiggerOrEqualValue(cutoff)))
