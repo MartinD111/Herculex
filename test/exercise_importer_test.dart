@@ -136,4 +136,28 @@ void main() {
     final deads = await repo.watchExercises(query: 'Deads').first;
     expect(deads.any((e) => e.name == 'Conventional Deadlift'), isTrue);
   });
+
+  test('equipment variants of one movement share a movementFamily', () async {
+    final json = File('assets/data/exercises.json').readAsStringSync();
+    await ExerciseImporter.runFromJson(db, json);
+    final catalog = await db.select(db.exerciseCatalog).get();
+
+    ExerciseCatalogData byName(String n) =>
+        catalog.firstWhere((e) => e.name == n);
+
+    final inclineFamilies = {
+      byName('Incline Barbell Bench').movementFamily,
+      byName('Incline Dumbbell Press').movementFamily,
+      byName('Machine Incline Press').movementFamily,
+      byName('Swiss Bar Incline Press').movementFamily,
+    };
+    expect(inclineFamilies, hasLength(1),
+        reason: 'all four incline presses collapse to one family');
+    expect(inclineFamilies.single, isNotNull);
+
+    // Flat bench is a different movement and must NOT merge with incline.
+    expect(byName('Barbell Bench Press').movementFamily,
+        isNot(inclineFamilies.single),
+        reason: 'incline and flat press are distinct families');
+  });
 }

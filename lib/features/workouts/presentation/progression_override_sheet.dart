@@ -130,8 +130,6 @@ class _ProgressionOverrideSheetState
               Switch(
                 value: _enabled,
                 onChanged: _loaded ? (v) => setState(() => _enabled = v) : null,
-                activeThumbColor: AppColors.primary,
-              activeTrackColor: AppColors.primary.withValues(alpha: 0.4),
               ),
             ],
           ),

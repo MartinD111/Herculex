@@ -81,7 +81,11 @@ class SetTypeMenu extends StatelessWidget {
             Text('Set Type',
                 style: theme.textTheme.titleMedium
                     ?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
+            Text('Tap a type to apply it to this set',
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: AppColors.secondary)),
+            const SizedBox(height: 12),
             Expanded(
               child: ListView(
                 controller: controller,
@@ -108,78 +112,137 @@ class _SetTypeTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Pause reps offer the standard 2/3/5s quick-picks inline (§15).
-    if (type == SetType.pause) {
-      return Container(
-        margin: const EdgeInsets.only(bottom: 6),
-        decoration: _decoration(),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          child: Row(
-            children: [
-              Expanded(child: Text(type.label, style: _labelStyle(theme))),
-              for (final s in pauseRepSecondsOptions)
-                Padding(
-                  padding: const EdgeInsets.only(left: 6),
-                  child: ActionChip(
-                    label: Text('${s}s'),
-                    onPressed: () => Navigator.of(context).pop(
-                      SetTypeSelection(type, jsonEncode({'pauseSeconds': s})),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    if (type == SetType.drop) {
-      return Container(
-        margin: const EdgeInsets.only(bottom: 6),
-        decoration: _decoration(),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          child: Row(
-            children: [
-              Expanded(child: Text(type.label, style: _labelStyle(theme))),
-              for (final pct in const [10, 20, 30])
-                Padding(
-                  padding: const EdgeInsets.only(left: 6),
-                  child: ActionChip(
-                    label: Text('-$pct%'),
-                    onPressed: () => Navigator.of(context).pop(
-                      SetTypeSelection(type, jsonEncode({'dropPercent': pct})),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      );
-    }
+    // Inline quick-picks for the metadata-carrying types (§15).
+    final List<Widget>? quickPicks = switch (type) {
+      SetType.pause => [
+          for (final s in pauseRepSecondsOptions)
+            _QuickPick(
+              label: '${s}s',
+              onTap: () => Navigator.of(context).pop(
+                SetTypeSelection(type, jsonEncode({'pauseSeconds': s})),
+              ),
+            ),
+        ],
+      SetType.drop => [
+          for (final pct in const [10, 20, 30])
+            _QuickPick(
+              label: '-$pct%',
+              onTap: () => Navigator.of(context).pop(
+                SetTypeSelection(type, jsonEncode({'dropPercent': pct})),
+              ),
+            ),
+        ],
+      _ => null,
+    };
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 6),
-      decoration: _decoration(),
-      child: ListTile(
-        dense: true,
-        title: Text(type.label, style: _labelStyle(theme)),
-        trailing: isSelected
-            ? const Icon(Icons.check, color: AppColors.primary, size: 20)
-            : null,
-        onTap: () => Navigator.of(context).pop(SetTypeSelection(type)),
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? AppColors.primary.withValues(alpha: 0.12)
+            : AppColors.surfaceContainer,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isSelected
+              ? AppColors.primary
+              : AppColors.outlineVariant.withValues(alpha: 0.0),
+          width: 1.5,
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: quickPicks != null
+            ? null
+            : () => Navigator.of(context).pop(SetTypeSelection(type)),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          child: Row(
+            children: [
+              _Badge(type: type, selected: isSelected),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  type.label,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                    color: isSelected ? AppColors.primary : null,
+                  ),
+                ),
+              ),
+              if (quickPicks != null)
+                ...quickPicks
+              else if (isSelected)
+                const Icon(Icons.check_circle, color: AppColors.primary, size: 22),
+            ],
+          ),
+        ),
       ),
     );
   }
+}
 
-  BoxDecoration _decoration() => BoxDecoration(
-        color: isSelected
-            ? AppColors.primaryContainer.withValues(alpha: 0.3)
-            : AppColors.surfaceContainer,
-        borderRadius: BorderRadius.circular(12),
-      );
+/// Leading badge bubble showing the set type's short code (or a dot for plain
+/// standard sets).
+class _Badge extends StatelessWidget {
+  final SetType type;
+  final bool selected;
+  const _Badge({required this.type, required this.selected});
 
-  TextStyle? _labelStyle(ThemeData theme) => theme.textTheme.titleSmall
-      ?.copyWith(fontWeight: isSelected ? FontWeight.bold : FontWeight.w500);
+  @override
+  Widget build(BuildContext context) {
+    final code = SetTypeMenu.badge(type);
+    return Container(
+      width: 36,
+      height: 36,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: selected
+            ? AppColors.primary.withValues(alpha: 0.2)
+            : AppColors.surfaceVariant,
+        shape: BoxShape.circle,
+      ),
+      child: code.isEmpty
+          ? Icon(Icons.remove,
+              size: 16,
+              color: selected ? AppColors.primary : AppColors.secondary)
+          : Text(
+              code,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: selected ? AppColors.primary : AppColors.onSurfaceVariant,
+              ),
+            ),
+    );
+  }
+}
+
+/// Small pill-shaped quick-pick (drop %, pause seconds).
+class _QuickPick extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _QuickPick({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 6),
+      child: Material(
+        color: AppColors.surfaceVariant,
+        shape: const StadiumBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            child: Text(
+              label,
+              style: const TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.onSurface),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

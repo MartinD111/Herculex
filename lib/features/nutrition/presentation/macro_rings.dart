@@ -82,8 +82,10 @@ class _Ring extends StatelessWidget {
             SizedBox(
               width: 64,
               height: 64,
+              // Always pass a concrete value: a null value makes the indicator
+              // indeterminate (spins endlessly, looking like a perpetual sync).
               child: CircularProgressIndicator(
-                value: pct,
+                value: pct ?? 0.0,
                 strokeWidth: 5,
                 backgroundColor: AppColors.surfaceVariant,
                 valueColor: AlwaysStoppedAnimation<Color>(color),

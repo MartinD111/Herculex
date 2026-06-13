@@ -32,6 +32,32 @@ class _ExercisePickerSheetState extends ConsumerState<ExercisePickerSheet> {
     super.dispose();
   }
 
+  /// Collapses equipment variants of the same movement into one group while
+  /// preserving the catalog's alphabetical order: a group takes the position of
+  /// its first-seen member, and rows without a family stay standalone. Each
+  /// group's variants are ordered with the base/free-weight option first.
+  List<List<ExerciseCatalogData>> _groupByFamily(
+      List<ExerciseCatalogData> list) {
+    final groups = <List<ExerciseCatalogData>>[];
+    final byFamily = <String, List<ExerciseCatalogData>>{};
+    for (final e in list) {
+      final fam = e.movementFamily;
+      if (fam == null) {
+        groups.add([e]);
+        continue;
+      }
+      final existing = byFamily[fam];
+      if (existing == null) {
+        final group = <ExerciseCatalogData>[e];
+        byFamily[fam] = group;
+        groups.add(group);
+      } else {
+        existing.add(e);
+      }
+    }
+    return groups;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -100,27 +126,256 @@ class _ExercisePickerSheetState extends ConsumerState<ExercisePickerSheet> {
             const SizedBox(height: 8),
             Expanded(
               child: exercises.when(
-                data: (list) => list.isEmpty
-                    ? Center(
-                        child: Text('No exercises found', style: theme.textTheme.bodyMedium),
-                      )
-                    : ListView.builder(
-                        controller: controller,
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-                        itemCount: list.length,
-                        itemBuilder: (_, i) {
-                          final e = list[i];
-                          return _ExerciseTile(
-                            exercise: e,
-                            onTap: () => Navigator.of(context).pop(e),
-                          );
-                        },
-                      ),
+                data: (list) {
+                  if (list.isEmpty) {
+                    return Center(
+                      child: Text('No exercises found',
+                          style: theme.textTheme.bodyMedium),
+                    );
+                  }
+                  final groups = _groupByFamily(list);
+                  return ListView.builder(
+                    controller: controller,
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                    itemCount: groups.length,
+                    itemBuilder: (_, i) {
+                      final g = groups[i];
+                      if (g.length == 1) {
+                        return _ExerciseTile(
+                          exercise: g.first,
+                          onTap: () => Navigator.of(context).pop(g.first),
+                        );
+                      }
+                      return _FamilyTile(
+                        variants: g,
+                        onPick: (picked) => Navigator.of(context).pop(picked),
+                      );
+                    },
+                  );
+                },
                 error: (e, _) => Center(child: Text('Failed to load: $e')),
                 loading: () => const Center(child: CircularProgressIndicator()),
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A collapsed movement that has multiple equipment variants. Tapping opens a
+/// style chooser; the chosen real catalog row is returned to the picker caller.
+class _FamilyTile extends StatelessWidget {
+  final List<ExerciseCatalogData> variants;
+  final ValueChanged<ExerciseCatalogData> onPick;
+  const _FamilyTile({required this.variants, required this.onPick});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final label = familyLabel(variants);
+    final styles = variants.map((v) => v.equipment).toSet().toList();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        onTap: () async {
+          final picked = await _StyleChooserSheet.show(context, label, variants);
+          if (picked != null) onPick(picked);
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceContainerLowest,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.4)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryContainer.withValues(alpha: 0.35),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.fitness_center, size: 20, color: AppColors.primary),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${variants.first.primaryMuscle} · ${styles.join(' / ')}',
+                      style: theme.textTheme.bodySmall?.copyWith(color: AppColors.secondary),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceContainer,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text('${variants.length} styles',
+                    style: theme.textTheme.labelSmall?.copyWith(color: AppColors.secondary)),
+              ),
+              const SizedBox(width: 6),
+              const Icon(Icons.chevron_right, size: 20, color: AppColors.secondary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Display name for the collapsed movement: the shared words across the
+  /// variant names with equipment terms removed (e.g. "Incline Press"). Falls
+  /// back to the shortest variant name if nothing meaningful remains.
+  static String familyLabel(List<ExerciseCatalogData> variants) {
+    String clean(String name) {
+      var n = ' ${name.toLowerCase()} ';
+      for (final t in _equipmentWords) {
+        n = n.replaceAll(' $t ', ' ');
+      }
+      n = n.replaceAll(RegExp(r'\s+'), ' ').trim();
+      n = n.replaceAll('bench press', 'press').replaceAll('bench', 'press');
+      return n.replaceAll(RegExp(r'\s+'), ' ').trim();
+    }
+
+    final base = clean(variants.first.name);
+    if (base.isEmpty) {
+      return variants
+          .map((v) => v.name)
+          .reduce((a, b) => a.length <= b.length ? a : b);
+    }
+    // Title-case the cleaned base.
+    return base
+        .split(' ')
+        .map((w) => w.isEmpty ? w : w[0].toUpperCase() + w.substring(1))
+        .join(' ');
+  }
+
+  static const _equipmentWords = <String>[
+    'swiss bar', 'safety bar', 'axle bar', 'cambered bar', 'duffalo bar',
+    'trap bar', 'hex bar', 'ez bar', 'ez-bar', 'landmine', 'meadows',
+    'smith machine', 'smith', 'machine', 'cable', 'band-assisted', 'banded',
+    'band', 'kettlebell', 'dumbbell', 'barbell', 'plate-loaded', 'plate',
+    'iso-lateral', 'hammer', 'pendulum', 'v-squat', 'belt squat', 'sled',
+    'yoke', 'rings', 'ring', 'trx', 'suspension', 'neck harness',
+  ];
+}
+
+/// Equipment-style chooser shown after tapping a collapsed movement. Lists the
+/// real catalog variants by their equipment label and returns the chosen row.
+class _StyleChooserSheet extends StatelessWidget {
+  final String movement;
+  final List<ExerciseCatalogData> variants;
+  const _StyleChooserSheet({required this.movement, required this.variants});
+
+  static Future<ExerciseCatalogData?> show(
+    BuildContext context,
+    String movement,
+    List<ExerciseCatalogData> variants,
+  ) {
+    return showModalBottomSheet<ExerciseCatalogData>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _StyleChooserSheet(movement: movement, variants: variants),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.bottomSheetTheme.backgroundColor ??
+            AppColors.surfaceContainerLowest,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.outlineVariant.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(movement,
+                  style: theme.textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text('Choose a style', style: theme.textTheme.bodyMedium),
+              const SizedBox(height: 16),
+              for (final v in variants)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: InkWell(
+                    onTap: () => Navigator.of(context).pop(v),
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      constraints: const BoxConstraints(minHeight: 56),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 18, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceContainer,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                            color:
+                                AppColors.outlineVariant.withValues(alpha: 0.4)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.fitness_center,
+                              size: 20, color: AppColors.secondary),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(v.equipment,
+                                    style: theme.textTheme.titleSmall
+                                        ?.copyWith(fontWeight: FontWeight.w600)),
+                                Text(v.name,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                        color: AppColors.secondary),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.add,
+                              size: 18, color: AppColors.primary),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

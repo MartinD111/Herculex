@@ -25,7 +25,7 @@ class DashboardView extends ConsumerWidget {
     final theme = Theme.of(context);
     final user = ref.watch(authStateProvider).asData?.value;
     final greeting = _greeting();
-    final name = user?.displayName ?? 'there';
+    final name = _firstName(user?.displayName);
     final today = DateFormat('MMM d, yyyy').format(DateTime.now()).toUpperCase();
     final profile = ref.watch(profileProvider).valueOrNull;
     final isFemale = profile?.sex == BiologicalSex.female;
@@ -109,11 +109,14 @@ class DashboardView extends ConsumerWidget {
     );
   }
 
-  String _greeting() {
-    final h = DateTime.now().hour;
-    if (h < 12) return 'Good morning';
-    if (h < 18) return 'Good afternoon';
-    return 'Good evening';
+  String _greeting() => 'Hello';
+
+  /// First name only, for a personal greeting. Generic OAuth placeholders like
+  /// "Google User" collapse to an empty string so we just say "Hello".
+  String _firstName(String? displayName) {
+    final raw = displayName?.trim() ?? '';
+    if (raw.isEmpty || raw.toLowerCase() == 'google user') return '';
+    return raw.split(RegExp(r'\s+')).first;
   }
 
   Widget _buildHeader(ThemeData theme, String greeting, String name, String today, SyncStatus syncStatus) {
@@ -125,7 +128,8 @@ class DashboardView extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("$greeting, $name", style: theme.textTheme.displayMedium),
+              Text(name.isEmpty ? greeting : "$greeting, $name",
+                  style: theme.textTheme.displayMedium),
               const SizedBox(height: 4),
               Text("Ready to align your day with your goals?", style: theme.textTheme.bodyMedium),
               const SizedBox(height: 8),

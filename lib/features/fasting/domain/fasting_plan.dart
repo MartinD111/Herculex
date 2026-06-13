@@ -4,6 +4,10 @@ enum FastingPlan {
   h16,
   h18,
   h20,
+  // Prolonged / extended fasts (multi-day).
+  d1,
+  d2,
+  d3,
   custom,
 }
 
@@ -20,10 +24,22 @@ extension FastingPlanExtension on FastingPlan {
         return '18:6';
       case FastingPlan.h20:
         return '20:4';
+      case FastingPlan.d1:
+        return '24h';
+      case FastingPlan.d2:
+        return '48h';
+      case FastingPlan.d3:
+        return '72h';
       case FastingPlan.custom:
         return 'Custom';
     }
   }
+
+  /// True for multi-day extended fasts, which get a distinct visual treatment.
+  bool get isProlonged =>
+      this == FastingPlan.d1 ||
+      this == FastingPlan.d2 ||
+      this == FastingPlan.d3;
 
   int get targetSeconds {
     switch (this) {
@@ -37,6 +53,12 @@ extension FastingPlanExtension on FastingPlan {
         return 18 * 3600;
       case FastingPlan.h20:
         return 20 * 3600;
+      case FastingPlan.d1:
+        return 24 * 3600;
+      case FastingPlan.d2:
+        return 48 * 3600;
+      case FastingPlan.d3:
+        return 72 * 3600;
       case FastingPlan.custom:
         return 0;
     }
@@ -54,6 +76,12 @@ extension FastingPlanExtension on FastingPlan {
         return 'Advanced fat-loss window';
       case FastingPlan.h20:
         return 'Warrior diet fast';
+      case FastingPlan.d1:
+        return 'Full-day fast for autophagy';
+      case FastingPlan.d2:
+        return 'Extended 2-day metabolic reset';
+      case FastingPlan.d3:
+        return 'Prolonged 3-day deep fast';
       case FastingPlan.custom:
         return 'Set your own target hours';
     }

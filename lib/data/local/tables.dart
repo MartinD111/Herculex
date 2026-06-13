@@ -47,6 +47,11 @@ class ExerciseCatalog extends Table {
   TextColumn get attachments => text().nullable()();
   /// False = attributes were machine-derived and not yet human-reviewed.
   BoolColumn get isReviewed => boolean().withDefault(const Constant(false))();
+  /// Movement-family key grouping equipment variants of the same movement
+  /// (e.g. "Incline Barbell Bench" + "Incline Dumbbell Press" share one
+  /// family). Drives the collapsed picker. Computed at import time; null on
+  /// legacy/custom rows until backfilled.
+  TextColumn get movementFamily => text().nullable()();
 
   @override
   List<Set<Column>> get uniqueKeys => [

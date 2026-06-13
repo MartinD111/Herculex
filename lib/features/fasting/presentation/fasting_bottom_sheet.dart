@@ -209,71 +209,36 @@ class _FastingBottomSheetState extends ConsumerState<FastingBottomSheet> {
           ),
         ),
         const SizedBox(height: 32),
-        Text("SELECT PLAN", style: theme.textTheme.labelSmall?.copyWith(color: AppColors.secondary, letterSpacing: 1.0)),
+        Text("INTERMITTENT", style: theme.textTheme.labelSmall?.copyWith(color: AppColors.secondary, letterSpacing: 1.0)),
         const SizedBox(height: 12),
-        ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: FastingPlan.values.length - 1, // Exclude custom for simplicity for now
-          separatorBuilder: (context, index) => const SizedBox(height: 12),
-          itemBuilder: (context, index) {
-            final plan = FastingPlan.values[index];
-            final isSelected = _selectedPlan == plan;
-            return InkWell(
-              onTap: () {
-                setState(() {
-                  _selectedPlan = plan;
-                });
-              },
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                decoration: BoxDecoration(
-                  color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : AppColors.surfaceContainerLowest,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isSelected ? AppColors.primary : AppColors.outlineVariant.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: isSelected ? AppColors.primary.withValues(alpha: 0.2) : AppColors.surfaceVariant,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.hourglass_empty,
-                        color: isSelected ? AppColors.primary : AppColors.onSurfaceVariant,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            plan.nameString,
-                            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                          Text(
-                            plan.description,
-                            style: theme.textTheme.bodySmall?.copyWith(color: AppColors.secondary),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (isSelected)
-                      const Icon(Icons.check_circle, color: AppColors.primary, size: 24),
-                  ],
-                ),
+        for (final plan in FastingPlan.values.where((p) => !p.isProlonged && p != FastingPlan.custom))
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _planTile(theme, plan),
+          ),
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            Text("PROLONGED", style: theme.textTheme.labelSmall?.copyWith(color: AppColors.secondary, letterSpacing: 1.0)),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(20),
               ),
-            );
-          },
+              child: Text("1–3 DAYS",
+                  style: theme.textTheme.labelSmall?.copyWith(
+                      color: AppColors.primary, fontSize: 9, letterSpacing: 0.5)),
+            ),
+          ],
         ),
+        const SizedBox(height: 12),
+        for (final plan in FastingPlan.values.where((p) => p.isProlonged))
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _planTile(theme, plan),
+          ),
         const SizedBox(height: 32),
         SizedBox(
           width: double.infinity,
@@ -287,6 +252,67 @@ class _FastingBottomSheetState extends ConsumerState<FastingBottomSheet> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _planTile(ThemeData theme, FastingPlan plan) {
+    final isSelected = _selectedPlan == plan;
+    return InkWell(
+      onTap: () => setState(() => _selectedPlan = plan),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: 0.1)
+              : AppColors.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primary
+                : AppColors.outlineVariant.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppColors.primary.withValues(alpha: 0.2)
+                    : AppColors.surfaceVariant,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                plan.isProlonged ? Icons.bedtime_outlined : Icons.hourglass_empty,
+                color: isSelected ? AppColors.primary : AppColors.onSurfaceVariant,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    plan.nameString,
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    plan.description,
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: AppColors.secondary),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              const Icon(Icons.check_circle, color: AppColors.primary, size: 24),
+          ],
+        ),
+      ),
     );
   }
 

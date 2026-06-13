@@ -292,11 +292,9 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                       ?.copyWith(color: AppColors.onSurfaceVariant),
                 ),
                 const SizedBox(width: 8),
-                Switch.adaptive(
+                Switch(
                   value: isMetric,
                   onChanged: (_) => ref.read(_unitsProvider.notifier).toggle(),
-                  activeThumbColor: AppColors.primary,
-                  activeTrackColor: AppColors.primary.withValues(alpha: 0.5),
                 ),
               ],
             ),
@@ -306,6 +304,13 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
             icon: Icons.dark_mode_rounded,
             label: 'Theme',
             trailing: _ThemeToggle(),
+          ),
+          _SettingsDivider(),
+          _SettingsTile(
+            icon: Icons.analytics_rounded,
+            label: 'Insights',
+            trailing: Icon(Icons.chevron_right, color: AppColors.onSurfaceVariant),
+            onTap: () => context.push('/insights'),
           ),
           _SettingsDivider(),
           _SettingsTile(
@@ -565,13 +570,17 @@ class _StatField extends StatelessWidget {
             hintStyle: TextStyle(color: AppColors.outline, fontSize: 13),
             filled: true,
             fillColor: AppColors.surfaceContainer,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(28),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(28),
               borderSide: BorderSide.none,
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(28),
               borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
             ),
           ),

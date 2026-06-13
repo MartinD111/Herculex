@@ -64,6 +64,7 @@ class ExerciseImporter {
       attachments:
           Value(attachments == null ? null : jsonEncode(attachments)),
       isReviewed: Value((e['derived'] as bool?) == true ? false : true),
+      movementFamily: Value(_movementFamily(name, pattern, primaryMuscle)),
     );
 
     final existing = await (db.select(db.exerciseCatalog)
@@ -95,6 +96,40 @@ class ExerciseImporter {
             ExerciseAliasesCompanion.insert(exerciseId: id, alias: alias),
           );
     }
+  }
+
+  /// Equipment tokens stripped from a name to find its base movement. Mirrors
+  /// the equipment vocabulary in `tool/build_exercises.py`. Order matters:
+  /// multi-word tokens are tried before their substrings (handled by sorting
+  /// on length in [_movementFamily]).
+  static const _equipmentTokens = <String>[
+    'swiss bar', 'safety bar', 'axle bar', 'cambered bar', 'duffalo bar',
+    'trap bar', 'hex bar', 'ez bar', 'ez-bar', 'landmine', 'meadows',
+    'smith machine', 'smith', 'machine', 'cable', 'band-assisted', 'banded',
+    'band', 'kettlebell', 'dumbbell', 'barbell', 'plate-loaded', 'plate',
+    'iso-lateral', 'hammer', 'pendulum', 'v-squat', 'belt squat', 'sled',
+    'yoke', 'rings', 'ring', 'trx', 'suspension', 'neck harness',
+  ];
+
+  /// Derives the movement-family key: the base movement name (equipment words
+  /// removed, bench→press normalized) scoped by movement pattern + coarse
+  /// muscle. Real modifiers (incline/decline/close-grip/…) survive, so
+  /// "Incline Press" and "Bench Press" remain distinct families while their
+  /// equipment variants collapse together. Returns null when there's no usable
+  /// pattern, so such rows stay ungrouped.
+  static String? _movementFamily(
+      String name, String? pattern, String primaryMuscle) {
+    if (pattern == null || pattern.isEmpty) return null;
+    var n = ' ${name.toLowerCase()} ';
+    for (final t in _equipmentTokens) {
+      n = n.replaceAll(' $t ', ' ');
+    }
+    n = n.replaceAll(RegExp(r'\s+'), ' ').trim();
+    // Press/bench synonyms collapse onto "press".
+    n = n.replaceAll('bench press', 'press').replaceAll('bench', 'press');
+    n = n.replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (n.isEmpty) return null;
+    return '$n|$pattern|$primaryMuscle';
   }
 
   static Future<void> _writeMuscles(

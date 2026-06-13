@@ -560,12 +560,21 @@ class _SetRowState extends State<_SetRow> {
       textAlign: TextAlign.center,
       decoration: InputDecoration(
         isDense: true,
-        contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         filled: true,
         fillColor: AppColors.surfaceContainer,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+        // Pill-shaped set inputs (stadium border).
+        border: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(24)),
           borderSide: BorderSide.none,
+        ),
+        enabledBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(24)),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(24)),
+          borderSide: BorderSide(color: AppColors.primary, width: 1.5),
         ),
       ),
     );

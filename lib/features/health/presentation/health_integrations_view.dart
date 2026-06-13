@@ -91,7 +91,6 @@ class _HealthIntegrationsViewState extends ConsumerState<HealthIntegrationsView>
                 onChanged: (val) {
                   ref.read(autoAdjustGymVolumeProvider.notifier).state = val;
                 },
-                activeThumbColor: AppColors.primary,
               ),
             ],
           ),
@@ -239,7 +238,6 @@ class _HealthIntegrationsViewState extends ConsumerState<HealthIntegrationsView>
           Switch(
             value: isConnected,
             onChanged: (val) => _togglePermission(key, val),
-            activeThumbColor: AppColors.primary,
           ),
         ],
       ),

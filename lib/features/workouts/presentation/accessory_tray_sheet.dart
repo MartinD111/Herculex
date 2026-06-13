@@ -269,15 +269,24 @@ class _ChainsFieldState extends ConsumerState<_ChainsField> {
       onEditingComplete: _commit,
       onTapOutside: (_) => _commit(),
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      decoration: InputDecoration(
+      decoration: const InputDecoration(
         hintText: '0',
         suffixText: 'kg',
         isDense: true,
         filled: true,
         fillColor: AppColors.surfaceContainer,
+        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.all(Radius.circular(28)),
           borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(28)),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(28)),
+          borderSide: BorderSide(color: AppColors.primary, width: 1.5),
         ),
       ),
     );

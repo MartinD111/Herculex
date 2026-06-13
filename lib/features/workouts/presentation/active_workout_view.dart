@@ -29,8 +29,11 @@ class ActiveWorkoutView extends ConsumerWidget {
 
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+        // Top SafeArea so the header clears the status bar / notch.
+        SafeArea(
+          bottom: false,
+          child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
           child: Row(
             children: [
               Expanded(
@@ -57,6 +60,7 @@ class ActiveWorkoutView extends ConsumerWidget {
                 onPressed: () => _confirmCancel(context, ref),
               ),
             ],
+          ),
           ),
         ),
         const Padding(

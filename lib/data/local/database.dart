@@ -57,7 +57,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -178,6 +178,12 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(nutritionTargets);
             await m.createTable(dietSchedules);
             await m.createTable(carbCyclePlans);
+          }
+          if (from < 13) {
+            // Collapsed exercise picker: movement-family grouping key, backfilled
+            // by re-importing the catalog (computes it in the importer).
+            await m.addColumn(exerciseCatalog, exerciseCatalog.movementFamily);
+            await ExerciseImporter.runFromAsset(this);
           }
         },
       );

@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../widgets/floating_nav_bar.dart';
-import '../analytics/presentation/insights_view.dart';
 import '../dashboard/presentation/dashboard_view.dart';
 import '../nutrition/presentation/nutrition_view.dart';
 import '../profile/presentation/profile_view.dart';
 import '../programs/presentation/training_blocks_view.dart';
 import '../workouts/presentation/workouts_view.dart';
 
-/// The six-tab home shell. Bottom-nav index drives which feature view shows.
+/// The five-tab home shell. Bottom-nav index drives which feature view shows.
+/// Insights moved off the nav bar (it overflowed at six items) and is now
+/// reachable from the Profile tab.
 class MainScaffold extends ConsumerStatefulWidget {
   const MainScaffold({super.key});
 
@@ -25,7 +26,6 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     NutritionView(),
     WorkoutsView(),
     TrainingBlocksView(),
-    InsightsView(),
     ProfileView(),
   ];
 

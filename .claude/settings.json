@@ -28,7 +28,8 @@
       "Read(//c/c/Users/marti/AMS d.o.o/Herculex/lib/**)",
       "Bash(sed -i '497,633d' lib/features/dashboard/presentation/dashboard_view.dart)",
       "Bash(sed -i '410,457d' lib/features/dashboard/presentation/dashboard_view.dart)",
-      "Bash(cd \"/c/Users/marti/AMS d.o.o/Herculex\" && sed -i '363,501d' lib/features/dashboard/presentation/dashboard_view.dart && tail -5 lib/features/dashboard/presentation/dashboard_view.dart && echo \"---lines---\" && wc -l lib/features/dashboard/presentation/dashboard_view.dart)"
+      "Bash(cd \"/c/Users/marti/AMS d.o.o/Herculex\" && sed -i '363,501d' lib/features/dashboard/presentation/dashboard_view.dart && tail -5 lib/features/dashboard/presentation/dashboard_view.dart && echo \"---lines---\" && wc -l lib/features/dashboard/presentation/dashboard_view.dart)",
+      "PowerShell(dart run build_runner build --delete-conflicting-outputs 2>&1)"
     ],
     "additionalDirectories": [
       "c:\\c\\Users\\marti\\AMS d.o.o\\Herculex\\lib\\features\\dashboard\\presentation"

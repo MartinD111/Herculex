@@ -429,8 +429,10 @@ class LiveMacrosGrid extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8),
+              // Concrete value avoids an indeterminate (animated) bar when no
+              // target is set — that read like a never-ending sync.
               LinearProgressIndicator(
-                value: progress,
+                value: progress ?? 0.0,
                 backgroundColor: AppColors.surfaceVariant,
                 valueColor: AlwaysStoppedAnimation<Color>(color),
                 borderRadius: BorderRadius.circular(4),
@@ -551,10 +553,12 @@ class DashboardCustomizeSheet extends ConsumerWidget {
                         child: ListTile(
                           leading: const Icon(Icons.drag_handle),
                           title: Text(w.type.label),
-                          trailing: Switch.adaptive(
+                          // Use the themed Switch (white thumb on a blue
+                          // track) — the previous adaptive switch forced a blue
+                          // thumb, which vanished against the blue track.
+                          trailing: Switch(
                             value: w.visible,
                             onChanged: (v) => notifier.toggle(w.type, v),
-                            activeThumbColor: AppColors.primary,
                           ),
                         ),
                       ),

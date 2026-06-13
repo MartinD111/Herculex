@@ -21,7 +21,22 @@ class InsightsView extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
           children: [
-            Text('Insights', style: theme.textTheme.displayMedium),
+            Row(
+              children: [
+                if (Navigator.of(context).canPop()) ...[
+                  IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    icon: const Icon(Icons.arrow_back_ios_new, size: 22),
+                    onPressed: () => Navigator.of(context).maybePop(),
+                  ),
+                  const SizedBox(width: 12),
+                ],
+                Expanded(
+                  child: Text('Insights', style: theme.textTheme.displayMedium),
+                ),
+              ],
+            ),
             const SizedBox(height: 8),
             Text(
               'Dynamic performance analytics, biometric sleep vs. stress correlations, and targeted muscle recovery calculations.',
@@ -234,35 +249,46 @@ class _SleepVsRpeCard extends ConsumerWidget {
             data: (res) => Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(
-                  height: 180,
-                  child: ScatterChart(
-                    ScatterChartData(
-                      scatterSpots: res.points
-                          .map((p) => ScatterSpot(
-                                p.x,
-                                p.y,
-                                dotPainter: FlDotCirclePainter(
-                                  radius: 6,
-                                  color: AppColors.primary,
-                                ),
-                              ))
-                          .toList(),
-                      gridData: const FlGridData(show: true),
-                      borderData: FlBorderData(show: false),
-                      titlesData: const FlTitlesData(
-                        topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: SizedBox(
+                    height: 180,
+                    child: ScatterChart(
+                      ScatterChartData(
+                        scatterSpots: res.points
+                            .map((p) => ScatterSpot(
+                                  p.x,
+                                  p.y,
+                                  dotPainter: FlDotCirclePainter(
+                                    radius: 6,
+                                    color: AppColors.primary,
+                                  ),
+                                ))
+                            .toList(),
+                        gridData: const FlGridData(show: true),
+                        borderData: FlBorderData(show: false),
+                        titlesData: const FlTitlesData(
+                          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 28)),
+                        ),
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text("R² FIT INDEX: ${res.r2.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
-                    Text(res.interpretation, style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 11)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        res.interpretation,
+                        textAlign: TextAlign.end,
+                        style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 11),
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -311,35 +337,46 @@ class _HrVsTonnageCard extends ConsumerWidget {
             data: (res) => Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(
-                  height: 180,
-                  child: ScatterChart(
-                    ScatterChartData(
-                      scatterSpots: res.points
-                          .map((p) => ScatterSpot(
-                                p.x,
-                                p.y,
-                                dotPainter: FlDotCirclePainter(
-                                  radius: 6,
-                                  color: Colors.teal,
-                                ),
-                              ))
-                          .toList(),
-                      gridData: const FlGridData(show: true),
-                      borderData: FlBorderData(show: false),
-                      titlesData: const FlTitlesData(
-                        topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: SizedBox(
+                    height: 180,
+                    child: ScatterChart(
+                      ScatterChartData(
+                        scatterSpots: res.points
+                            .map((p) => ScatterSpot(
+                                  p.x,
+                                  p.y,
+                                  dotPainter: FlDotCirclePainter(
+                                    radius: 6,
+                                    color: Colors.teal,
+                                  ),
+                                ))
+                            .toList(),
+                        gridData: const FlGridData(show: true),
+                        borderData: FlBorderData(show: false),
+                        titlesData: const FlTitlesData(
+                          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 28)),
+                        ),
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text("R² FIT INDEX: ${res.r2.toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
-                    Text(res.interpretation, style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold, fontSize: 11)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        res.interpretation,
+                        textAlign: TextAlign.end,
+                        style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold, fontSize: 11),
+                      ),
+                    ),
                   ],
                 ),
               ],

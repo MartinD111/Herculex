@@ -24,7 +24,7 @@ class FloatingNavBar extends StatelessWidget {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 12.0, sigmaY: 12.0),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 12.0),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
               borderRadius: BorderRadius.circular(32.0),
@@ -60,16 +60,10 @@ class FloatingNavBar extends StatelessWidget {
                   onTap: () => onTap(3),
                 ),
                 _NavItem(
-                  icon: Icons.analytics_rounded,
-                  label: "Insights",
-                  isSelected: currentIndex == 4,
-                  onTap: () => onTap(4),
-                ),
-                _NavItem(
                   icon: Icons.person_rounded,
                   label: "Profile",
-                  isSelected: currentIndex == 5,
-                  onTap: () => onTap(5),
+                  isSelected: currentIndex == 4,
+                  onTap: () => onTap(4),
                 ),
               ],
             ),
@@ -121,6 +115,9 @@ class _NavItem extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               label,
+              maxLines: 1,
+              overflow: TextOverflow.fade,
+              softWrap: false,
               style: theme.textTheme.labelSmall?.copyWith(
                 color: color,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,

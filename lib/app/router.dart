@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../features/admin/presentation/admin_dashboard_view.dart';
 import '../features/admin/presentation/admin_insert_recipe_view.dart';
 import '../features/admin/presentation/admin_insert_workout_view.dart';
+import '../features/analytics/presentation/insights_view.dart';
 import '../features/auth/domain/app_user.dart';
 import '../features/auth/presentation/landing_view.dart';
 import '../features/auth/presentation/login_view.dart';
@@ -88,6 +89,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/measurements', builder: (_, _) => const MeasurementsView()),
       GoRoute(path: '/gyms', builder: (_, _) => const GymsView()),
       GoRoute(path: '/micro-workouts', builder: (_, _) => const MicroWorkoutsView()),
+      GoRoute(path: '/insights', builder: (_, _) => const InsightsView()),
       GoRoute(path: '/nutrition-targets', builder: (_, _) => const NutritionTargetsView()),
       GoRoute(path: '/rotation-pools', builder: (_, _) => const RotationPoolsView()),
     ],

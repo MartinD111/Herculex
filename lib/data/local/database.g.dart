@@ -240,6 +240,17 @@ class $ExerciseCatalogTable extends ExerciseCatalog
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _movementFamilyMeta = const VerificationMeta(
+    'movementFamily',
+  );
+  @override
+  late final GeneratedColumn<String> movementFamily = GeneratedColumn<String>(
+    'movement_family',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -262,6 +273,7 @@ class $ExerciseCatalogTable extends ExerciseCatalog
     supportsWeightedBodyweight,
     attachments,
     isReviewed,
+    movementFamily,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -428,6 +440,15 @@ class $ExerciseCatalogTable extends ExerciseCatalog
         isReviewed.isAcceptableOrUnknown(data['is_reviewed']!, _isReviewedMeta),
       );
     }
+    if (data.containsKey('movement_family')) {
+      context.handle(
+        _movementFamilyMeta,
+        movementFamily.isAcceptableOrUnknown(
+          data['movement_family']!,
+          _movementFamilyMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -521,6 +542,10 @@ class $ExerciseCatalogTable extends ExerciseCatalog
         DriftSqlType.bool,
         data['${effectivePrefix}is_reviewed'],
       )!,
+      movementFamily: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}movement_family'],
+      ),
     );
   }
 
@@ -567,6 +592,12 @@ class ExerciseCatalogData extends DataClass
 
   /// False = attributes were machine-derived and not yet human-reviewed.
   final bool isReviewed;
+
+  /// Movement-family key grouping equipment variants of the same movement
+  /// (e.g. "Incline Barbell Bench" + "Incline Dumbbell Press" share one
+  /// family). Drives the collapsed picker. Computed at import time; null on
+  /// legacy/custom rows until backfilled.
+  final String? movementFamily;
   const ExerciseCatalogData({
     required this.id,
     required this.name,
@@ -588,6 +619,7 @@ class ExerciseCatalogData extends DataClass
     required this.supportsWeightedBodyweight,
     this.attachments,
     required this.isReviewed,
+    this.movementFamily,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -622,6 +654,9 @@ class ExerciseCatalogData extends DataClass
       map['attachments'] = Variable<String>(attachments);
     }
     map['is_reviewed'] = Variable<bool>(isReviewed);
+    if (!nullToAbsent || movementFamily != null) {
+      map['movement_family'] = Variable<String>(movementFamily);
+    }
     return map;
   }
 
@@ -653,6 +688,9 @@ class ExerciseCatalogData extends DataClass
           ? const Value.absent()
           : Value(attachments),
       isReviewed: Value(isReviewed),
+      movementFamily: movementFamily == null && nullToAbsent
+          ? const Value.absent()
+          : Value(movementFamily),
     );
   }
 
@@ -686,6 +724,7 @@ class ExerciseCatalogData extends DataClass
       ),
       attachments: serializer.fromJson<String?>(json['attachments']),
       isReviewed: serializer.fromJson<bool>(json['isReviewed']),
+      movementFamily: serializer.fromJson<String?>(json['movementFamily']),
     );
   }
   @override
@@ -714,6 +753,7 @@ class ExerciseCatalogData extends DataClass
       ),
       'attachments': serializer.toJson<String?>(attachments),
       'isReviewed': serializer.toJson<bool>(isReviewed),
+      'movementFamily': serializer.toJson<String?>(movementFamily),
     };
   }
 
@@ -738,6 +778,7 @@ class ExerciseCatalogData extends DataClass
     bool? supportsWeightedBodyweight,
     Value<String?> attachments = const Value.absent(),
     bool? isReviewed,
+    Value<String?> movementFamily = const Value.absent(),
   }) => ExerciseCatalogData(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -764,6 +805,9 @@ class ExerciseCatalogData extends DataClass
         supportsWeightedBodyweight ?? this.supportsWeightedBodyweight,
     attachments: attachments.present ? attachments.value : this.attachments,
     isReviewed: isReviewed ?? this.isReviewed,
+    movementFamily: movementFamily.present
+        ? movementFamily.value
+        : this.movementFamily,
   );
   ExerciseCatalogData copyWithCompanion(ExerciseCatalogCompanion data) {
     return ExerciseCatalogData(
@@ -805,6 +849,9 @@ class ExerciseCatalogData extends DataClass
       isReviewed: data.isReviewed.present
           ? data.isReviewed.value
           : this.isReviewed,
+      movementFamily: data.movementFamily.present
+          ? data.movementFamily.value
+          : this.movementFamily,
     );
   }
 
@@ -830,13 +877,14 @@ class ExerciseCatalogData extends DataClass
           ..write('loggingMetric: $loggingMetric, ')
           ..write('supportsWeightedBodyweight: $supportsWeightedBodyweight, ')
           ..write('attachments: $attachments, ')
-          ..write('isReviewed: $isReviewed')
+          ..write('isReviewed: $isReviewed, ')
+          ..write('movementFamily: $movementFamily')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     name,
     primaryMuscle,
@@ -857,7 +905,8 @@ class ExerciseCatalogData extends DataClass
     supportsWeightedBodyweight,
     attachments,
     isReviewed,
-  );
+    movementFamily,
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -881,7 +930,8 @@ class ExerciseCatalogData extends DataClass
           other.loggingMetric == this.loggingMetric &&
           other.supportsWeightedBodyweight == this.supportsWeightedBodyweight &&
           other.attachments == this.attachments &&
-          other.isReviewed == this.isReviewed);
+          other.isReviewed == this.isReviewed &&
+          other.movementFamily == this.movementFamily);
 }
 
 class ExerciseCatalogCompanion extends UpdateCompanion<ExerciseCatalogData> {
@@ -905,6 +955,7 @@ class ExerciseCatalogCompanion extends UpdateCompanion<ExerciseCatalogData> {
   final Value<bool> supportsWeightedBodyweight;
   final Value<String?> attachments;
   final Value<bool> isReviewed;
+  final Value<String?> movementFamily;
   const ExerciseCatalogCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -926,6 +977,7 @@ class ExerciseCatalogCompanion extends UpdateCompanion<ExerciseCatalogData> {
     this.supportsWeightedBodyweight = const Value.absent(),
     this.attachments = const Value.absent(),
     this.isReviewed = const Value.absent(),
+    this.movementFamily = const Value.absent(),
   });
   ExerciseCatalogCompanion.insert({
     this.id = const Value.absent(),
@@ -948,6 +1000,7 @@ class ExerciseCatalogCompanion extends UpdateCompanion<ExerciseCatalogData> {
     this.supportsWeightedBodyweight = const Value.absent(),
     this.attachments = const Value.absent(),
     this.isReviewed = const Value.absent(),
+    this.movementFamily = const Value.absent(),
   }) : name = Value(name),
        primaryMuscle = Value(primaryMuscle),
        equipment = Value(equipment),
@@ -975,6 +1028,7 @@ class ExerciseCatalogCompanion extends UpdateCompanion<ExerciseCatalogData> {
     Expression<bool>? supportsWeightedBodyweight,
     Expression<String>? attachments,
     Expression<bool>? isReviewed,
+    Expression<String>? movementFamily,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1000,6 +1054,7 @@ class ExerciseCatalogCompanion extends UpdateCompanion<ExerciseCatalogData> {
         'supports_weighted_bodyweight': supportsWeightedBodyweight,
       if (attachments != null) 'attachments': attachments,
       if (isReviewed != null) 'is_reviewed': isReviewed,
+      if (movementFamily != null) 'movement_family': movementFamily,
     });
   }
 
@@ -1024,6 +1079,7 @@ class ExerciseCatalogCompanion extends UpdateCompanion<ExerciseCatalogData> {
     Value<bool>? supportsWeightedBodyweight,
     Value<String?>? attachments,
     Value<bool>? isReviewed,
+    Value<String?>? movementFamily,
   }) {
     return ExerciseCatalogCompanion(
       id: id ?? this.id,
@@ -1047,6 +1103,7 @@ class ExerciseCatalogCompanion extends UpdateCompanion<ExerciseCatalogData> {
           supportsWeightedBodyweight ?? this.supportsWeightedBodyweight,
       attachments: attachments ?? this.attachments,
       isReviewed: isReviewed ?? this.isReviewed,
+      movementFamily: movementFamily ?? this.movementFamily,
     );
   }
 
@@ -1115,6 +1172,9 @@ class ExerciseCatalogCompanion extends UpdateCompanion<ExerciseCatalogData> {
     if (isReviewed.present) {
       map['is_reviewed'] = Variable<bool>(isReviewed.value);
     }
+    if (movementFamily.present) {
+      map['movement_family'] = Variable<String>(movementFamily.value);
+    }
     return map;
   }
 
@@ -1140,7 +1200,8 @@ class ExerciseCatalogCompanion extends UpdateCompanion<ExerciseCatalogData> {
           ..write('loggingMetric: $loggingMetric, ')
           ..write('supportsWeightedBodyweight: $supportsWeightedBodyweight, ')
           ..write('attachments: $attachments, ')
-          ..write('isReviewed: $isReviewed')
+          ..write('isReviewed: $isReviewed, ')
+          ..write('movementFamily: $movementFamily')
           ..write(')'))
         .toString();
   }
@@ -17787,6 +17848,7 @@ typedef $$ExerciseCatalogTableCreateCompanionBuilder =
       Value<bool> supportsWeightedBodyweight,
       Value<String?> attachments,
       Value<bool> isReviewed,
+      Value<String?> movementFamily,
     });
 typedef $$ExerciseCatalogTableUpdateCompanionBuilder =
     ExerciseCatalogCompanion Function({
@@ -17810,6 +17872,7 @@ typedef $$ExerciseCatalogTableUpdateCompanionBuilder =
       Value<bool> supportsWeightedBodyweight,
       Value<String?> attachments,
       Value<bool> isReviewed,
+      Value<String?> movementFamily,
     });
 
 final class $$ExerciseCatalogTableReferences
@@ -18153,6 +18216,11 @@ class $$ExerciseCatalogTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get movementFamily => $composableBuilder(
+    column: $table.movementFamily,
+    builder: (column) => ColumnFilters(column),
+  );
+
   Expression<bool> exerciseMusclesRefs(
     Expression<bool> Function($$ExerciseMusclesTableFilterComposer f) f,
   ) {
@@ -18487,6 +18555,11 @@ class $$ExerciseCatalogTableOrderingComposer
     column: $table.isReviewed,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get movementFamily => $composableBuilder(
+    column: $table.movementFamily,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ExerciseCatalogTableAnnotationComposer
@@ -18573,6 +18646,11 @@ class $$ExerciseCatalogTableAnnotationComposer
 
   GeneratedColumn<bool> get isReviewed => $composableBuilder(
     column: $table.isReviewed,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get movementFamily => $composableBuilder(
+    column: $table.movementFamily,
     builder: (column) => column,
   );
 
@@ -18865,6 +18943,7 @@ class $$ExerciseCatalogTableTableManager
                 Value<bool> supportsWeightedBodyweight = const Value.absent(),
                 Value<String?> attachments = const Value.absent(),
                 Value<bool> isReviewed = const Value.absent(),
+                Value<String?> movementFamily = const Value.absent(),
               }) => ExerciseCatalogCompanion(
                 id: id,
                 name: name,
@@ -18886,6 +18965,7 @@ class $$ExerciseCatalogTableTableManager
                 supportsWeightedBodyweight: supportsWeightedBodyweight,
                 attachments: attachments,
                 isReviewed: isReviewed,
+                movementFamily: movementFamily,
               ),
           createCompanionCallback:
               ({
@@ -18909,6 +18989,7 @@ class $$ExerciseCatalogTableTableManager
                 Value<bool> supportsWeightedBodyweight = const Value.absent(),
                 Value<String?> attachments = const Value.absent(),
                 Value<bool> isReviewed = const Value.absent(),
+                Value<String?> movementFamily = const Value.absent(),
               }) => ExerciseCatalogCompanion.insert(
                 id: id,
                 name: name,
@@ -18930,6 +19011,7 @@ class $$ExerciseCatalogTableTableManager
                 supportsWeightedBodyweight: supportsWeightedBodyweight,
                 attachments: attachments,
                 isReviewed: isReviewed,
+                movementFamily: movementFamily,
               ),
           withReferenceMapper: (p0) => p0
               .map(
