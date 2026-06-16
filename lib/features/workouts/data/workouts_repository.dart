@@ -184,7 +184,7 @@ class WorkoutsRepository {
           ..where((t) => t.id.equals(exerciseId)))
         .getSingle();
 
-    return _db.into(_db.workoutExercises).insert(
+    final workoutExerciseId = await _db.into(_db.workoutExercises).insert(
           WorkoutExercisesCompanion.insert(
             sessionId: sessionId,
             exerciseId: exerciseId,
@@ -194,6 +194,17 @@ class WorkoutsRepository {
             machineConfigJson: Value(machineConfigJson),
           ),
         );
+
+    await _db.into(_db.setEntries).insert(
+          SetEntriesCompanion.insert(
+            workoutExerciseId: workoutExerciseId,
+            setIndex: 0,
+            weightKg: 0,
+            reps: 0,
+          ),
+        );
+
+    return workoutExerciseId;
   }
 
   /// Variant chosen at log time; null falls back to the catalog modality.

@@ -173,8 +173,17 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
     final isMetric = ref.watch(_unitsProvider);
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 120),
       children: [
+        if (Navigator.of(context).canPop())
+          Align(
+            alignment: Alignment.centerLeft,
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              icon: const Icon(Icons.chevron_left, size: 28),
+              onPressed: () => Navigator.of(context).maybePop(),
+            ),
+          ),
         // ── Avatar / header ───────────────────────────────────────────────
         _AvatarHeader(profile: widget.profile),
         const SizedBox(height: 32),

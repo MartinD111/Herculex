@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../app/providers.dart';
@@ -50,6 +51,8 @@ class DashboardView extends ConsumerWidget {
                     tooltip: 'Customize dashboard',
                     onPressed: () => _showCustomizeSheet(context, ref),
                   ),
+                  const SizedBox(width: 4),
+                  _ProfileAvatarButton(name: name),
                 ],
               ),
               const SizedBox(height: 24),
@@ -363,4 +366,40 @@ class DashboardView extends ConsumerWidget {
     return DateTime(n.year, n.month, n.day);
   }
 
+}
+
+/// Circular gradient avatar in the dashboard header. Replaces the Profile nav
+/// tab as the entry point into `/profile`.
+class _ProfileAvatarButton extends StatelessWidget {
+  final String name;
+  const _ProfileAvatarButton({required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    final initial = name.trim().isEmpty ? 'A' : name.trim()[0].toUpperCase();
+    return GestureDetector(
+      onTap: () => context.push('/profile'),
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [AppColors.primary, Color(0xFF30D158)],
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          initial,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    );
+  }
 }

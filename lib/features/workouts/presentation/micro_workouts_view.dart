@@ -129,7 +129,7 @@ class MicroWorkoutsView extends ConsumerWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        title: Text(exercise.name),
+        title: Text(exercise.exercise.name),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -161,8 +161,8 @@ class MicroWorkoutsView extends ConsumerWidget {
     final reps = int.tryParse(repsCtrl.text) ?? 20;
     final times = (int.tryParse(timesCtrl.text) ?? 1).clamp(1, 24);
     await ref.read(microWorkoutsRepositoryProvider).create(
-          name: '$reps ${exercise.name}',
-          exerciseId: exercise.id,
+          name: '$reps ${exercise.exercise.name}',
+          exerciseId: exercise.exercise.id,
           targetReps: reps,
           timesPerDay: times,
         );

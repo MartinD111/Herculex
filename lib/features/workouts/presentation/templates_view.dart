@@ -17,26 +17,21 @@ class TemplatesView extends ConsumerWidget {
     final unfiledAsync = ref.watch(workoutTemplatesProvider(null));
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 120),
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 120),
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            Text('Templates', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            Row(
-              children: [
-                _IconPill(
-                  icon: Icons.create_new_folder_outlined,
-                  label: 'Folder',
-                  onTap: () => _createFolder(context, ref),
-                ),
-                const SizedBox(width: 8),
-                _IconPill(
-                  icon: Icons.add,
-                  label: 'Template',
-                  onTap: () => TemplateBuilderView.show(context),
-                ),
-              ],
+            _IconPill(
+              icon: Icons.create_new_folder_outlined,
+              label: 'Folder',
+              onTap: () => _createFolder(context, ref),
+            ),
+            const SizedBox(width: 10),
+            _IconPill(
+              icon: Icons.add,
+              label: 'Template',
+              onTap: () => TemplateBuilderView.show(context),
             ),
           ],
         ),

@@ -6,16 +6,27 @@ import '../../../theme/colors.dart';
 import 'custom_exercise_builder_view.dart';
 import 'workouts_providers.dart';
 
+/// Result from [ExercisePickerSheet.show]. [equipmentAlreadyChosen] is true
+/// when the user picked from a multi-variant family style chooser, meaning the
+/// equipment is already encoded in the catalog entry and a second equipment
+/// prompt would be redundant.
+typedef ExercisePickResult = ({
+  ExerciseCatalogData exercise,
+  bool equipmentAlreadyChosen,
+});
+
 class ExercisePickerSheet extends ConsumerStatefulWidget {
   const ExercisePickerSheet({super.key});
 
-  static Future<ExerciseCatalogData?> show(BuildContext context) {
-    return showModalBottomSheet<ExerciseCatalogData>(
+  static Future<ExercisePickResult?> show(BuildContext context) async {
+    final raw = await showModalBottomSheet<(ExerciseCatalogData, bool)>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => const ExercisePickerSheet(),
     );
+    if (raw == null) return null;
+    return (exercise: raw.$1, equipmentAlreadyChosen: raw.$2);
   }
 
   @override
@@ -97,7 +108,7 @@ class _ExercisePickerSheetState extends ConsumerState<ExercisePickerSheet> {
                     onPressed: () async {
                       final created = await CustomExerciseBuilderView.show(context);
                       if (created != null && context.mounted) {
-                        Navigator.of(context).pop(created);
+                        Navigator.of(context).pop((created, false));
                       }
                     },
                   ),
@@ -143,12 +154,12 @@ class _ExercisePickerSheetState extends ConsumerState<ExercisePickerSheet> {
                       if (g.length == 1) {
                         return _ExerciseTile(
                           exercise: g.first,
-                          onTap: () => Navigator.of(context).pop(g.first),
+                          onTap: () => Navigator.of(context).pop((g.first, false)),
                         );
                       }
                       return _FamilyTile(
                         variants: g,
-                        onPick: (picked) => Navigator.of(context).pop(picked),
+                        onPick: (picked) => Navigator.of(context).pop((picked, true)),
                       );
                     },
                   );

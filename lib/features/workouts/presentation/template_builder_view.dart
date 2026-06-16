@@ -222,7 +222,7 @@ class _EditBody extends ConsumerWidget {
                       if (picked != null) {
                         await repo.addExerciseToTemplate(
                           templateId: template.id,
-                          exerciseId: picked.id,
+                          exerciseId: picked.exercise.id,
                         );
                       }
                     },

@@ -183,7 +183,7 @@ class _RotationPoolSheetState extends ConsumerState<RotationPoolSheet> {
                       if (ex != null) {
                         await ref
                             .read(rotationsRepositoryProvider)
-                            .addMember(widget.existing!.id, ex.id);
+                            .addMember(widget.existing!.id, ex.exercise.id);
                       }
                     },
                     icon: const Icon(Icons.add, size: 16),

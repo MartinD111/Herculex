@@ -16,6 +16,7 @@ import '../features/nutrition/presentation/nutrition_targets_view.dart';
 import '../features/onboarding/presentation/onboarding_view.dart';
 import '../features/programs/presentation/rotation_pools_view.dart';
 import '../features/profile/domain/profile.dart';
+import '../features/profile/presentation/profile_view.dart';
 import '../features/shell/main_scaffold.dart';
 import '../features/workouts/presentation/micro_workouts_view.dart';
 import '../features/workouts/presentation/workout_history_view.dart';
@@ -90,6 +91,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/gyms', builder: (_, _) => const GymsView()),
       GoRoute(path: '/micro-workouts', builder: (_, _) => const MicroWorkoutsView()),
       GoRoute(path: '/insights', builder: (_, _) => const InsightsView()),
+      GoRoute(path: '/profile', builder: (_, _) => const ProfileView()),
       GoRoute(path: '/nutrition-targets', builder: (_, _) => const NutritionTargetsView()),
       GoRoute(path: '/rotation-pools', builder: (_, _) => const RotationPoolsView()),
     ],

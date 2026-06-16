@@ -33,7 +33,7 @@ class ActiveWorkoutView extends ConsumerWidget {
         SafeArea(
           bottom: false,
           child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
           child: Row(
             children: [
               Expanded(
@@ -111,7 +111,7 @@ class ActiveWorkoutView extends ConsumerWidget {
         SafeArea(
           top: false,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 104),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 104),
             child: Row(
               children: [
                 Expanded(
@@ -120,12 +120,17 @@ class ActiveWorkoutView extends ConsumerWidget {
                     icon: Icons.add,
                     isPrimary: false,
                     onTap: () async {
-                      final picked = await ExercisePickerSheet.show(context);
-                      if (picked == null || !context.mounted) return;
-                      // Hevy-style flow (§26): immediately ask which
-                      // equipment, store the variant on the log entry.
-                      final variant =
-                          await EquipmentVariantSheet.show(context, picked);
+                      final result = await ExercisePickerSheet.show(context);
+                      if (result == null || !context.mounted) return;
+                      final picked = result.exercise;
+                      // Skip the equipment sheet when the user already chose
+                      // a specific catalog variant in the style chooser.
+                      final String? variant;
+                      if (result.equipmentAlreadyChosen) {
+                        variant = picked.modality;
+                      } else {
+                        variant = await EquipmentVariantSheet.show(context, picked);
+                      }
                       if (variant == null) return;
                       await repo.addExerciseToSession(
                         sessionId: session.id,
