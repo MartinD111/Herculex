@@ -1,14 +1,12 @@
 import 'package:drift/drift.dart';
 
-import '../../../core/clock.dart';
 import '../../../data/local/database.dart';
 import '../domain/periodization.dart';
 
 class ProgramsRepository {
   final AppDatabase _db;
-  final Clock _clock;
 
-  ProgramsRepository(this._db, this._clock);
+  ProgramsRepository(this._db);
 
   // ── Template CRUD ────────────────────────────────────────────────────────
 

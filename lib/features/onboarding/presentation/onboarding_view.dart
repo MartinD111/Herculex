@@ -17,6 +17,7 @@ class OnboardingView extends ConsumerStatefulWidget {
 
 class _OnboardingViewState extends ConsumerState<OnboardingView> {
   final _pageController = PageController();
+  final _nameCtrl = TextEditingController();
   final _ageCtrl = TextEditingController();
   final _weightCtrl = TextEditingController();
   final _heightCtrl = TextEditingController();
@@ -28,6 +29,7 @@ class _OnboardingViewState extends ConsumerState<OnboardingView> {
   @override
   void dispose() {
     _pageController.dispose();
+    _nameCtrl.dispose();
     _ageCtrl.dispose();
     _weightCtrl.dispose();
     _heightCtrl.dispose();
@@ -53,7 +55,9 @@ class _OnboardingViewState extends ConsumerState<OnboardingView> {
   }
 
   Future<void> _complete() async {
+    final name = _nameCtrl.text.trim();
     final profile = Profile(
+      name: name.isEmpty ? null : name,
       goal: _goal ?? FitnessGoal.maintenance,
       activityLevel: _activity ?? ActivityLevel.lightlyActive,
       ageYears: int.tryParse(_ageCtrl.text.trim()),
@@ -205,6 +209,9 @@ class _OnboardingViewState extends ConsumerState<OnboardingView> {
         const SizedBox(height: 8),
         Text("This helps us calculate your macros accurately.", style: theme.textTheme.bodyMedium),
         const SizedBox(height: 32),
+        _textField("Name (optional)", "e.g. Alex", _nameCtrl,
+            keyboardType: TextInputType.name),
+        const SizedBox(height: 16),
         _numField("Age", "e.g. 25", _ageCtrl),
         const SizedBox(height: 16),
         Row(
@@ -218,7 +225,15 @@ class _OnboardingViewState extends ConsumerState<OnboardingView> {
     );
   }
 
-  Widget _numField(String label, String hint, TextEditingController controller) {
+  Widget _numField(String label, String hint, TextEditingController controller) =>
+      _textField(label, hint, controller, keyboardType: TextInputType.number);
+
+  Widget _textField(
+    String label,
+    String hint,
+    TextEditingController controller, {
+    TextInputType keyboardType = TextInputType.text,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -239,7 +254,7 @@ class _OnboardingViewState extends ConsumerState<OnboardingView> {
               borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
             ),
           ),
-          keyboardType: TextInputType.number,
+          keyboardType: keyboardType,
         ),
       ],
     );

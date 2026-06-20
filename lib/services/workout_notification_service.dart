@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 /// Shows / updates / cancels a persistent "Workout in progress" notification
@@ -26,15 +27,30 @@ class WorkoutNotificationService {
       requestBadgePermission: false,
       requestSoundPermission: false,
     );
-    await _plugin.initialize(
-      const InitializationSettings(android: android, iOS: iOS),
-    );
+    await _guard(() async {
+      await _plugin.initialize(
+        const InitializationSettings(android: android, iOS: iOS),
+      );
 
-    // Request permission on Android 13+.
-    await _plugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
+      // Request permission on Android 13+.
+      await _plugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.requestNotificationsPermission();
+    });
+  }
+
+  /// Runs a notification-plugin call, swallowing platform-channel failures so a
+  /// missing channel (tests) or a device that blocks notifications can never
+  /// crash the app. Errors are logged in debug only.
+  Future<void> _guard(Future<void> Function() body) async {
+    try {
+      await body();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('WorkoutNotificationService: notification call skipped ($e)');
+      }
+    }
   }
 
   /// Start ticking a live notification that updates the elapsed time every
@@ -71,19 +87,19 @@ class WorkoutNotificationService {
       presentBadge: false,
       presentSound: false,
     );
-    await _plugin.show(
-      _notifId,
-      'Workout  $elapsed',
-      exerciseName,
-      const NotificationDetails(android: androidDetails, iOS: iOSDetails),
-    );
+    await _guard(() => _plugin.show(
+          _notifId,
+          'Workout  $elapsed',
+          exerciseName,
+          const NotificationDetails(android: androidDetails, iOS: iOSDetails),
+        ));
   }
 
   /// Stop the ticker and dismiss the notification.
   Future<void> cancel() async {
     _ticker?.cancel();
     _ticker = null;
-    await _plugin.cancel(_notifId);
+    await _guard(() => _plugin.cancel(_notifId));
   }
 
   String _fmt(Duration d) {

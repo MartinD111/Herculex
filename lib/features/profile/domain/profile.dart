@@ -47,6 +47,7 @@ enum BiologicalSex {
 }
 
 class Profile {
+  final String? name;
   final FitnessGoal goal;
   final ActivityLevel activityLevel;
   final int? ageYears;
@@ -55,6 +56,7 @@ class Profile {
   final BiologicalSex? sex;
 
   const Profile({
+    this.name,
     required this.goal,
     required this.activityLevel,
     this.ageYears,
@@ -67,6 +69,7 @@ class Profile {
       ageYears != null && weightKg != null && heightCm != null;
 
   Profile copyWith({
+    String? name,
     FitnessGoal? goal,
     ActivityLevel? activityLevel,
     int? ageYears,
@@ -75,6 +78,7 @@ class Profile {
     BiologicalSex? sex,
   }) =>
       Profile(
+        name: name ?? this.name,
         goal: goal ?? this.goal,
         activityLevel: activityLevel ?? this.activityLevel,
         ageYears: ageYears ?? this.ageYears,
@@ -84,6 +88,7 @@ class Profile {
       );
 
   Map<String, dynamic> toJson() => {
+        'name': name,
         'goal': goal.name,
         'activityLevel': activityLevel.name,
         'ageYears': ageYears,
@@ -93,6 +98,9 @@ class Profile {
       };
 
   factory Profile.fromJson(Map<String, dynamic> json) => Profile(
+        name: (json['name'] as String?)?.trim().isEmpty ?? true
+            ? null
+            : (json['name'] as String).trim(),
         goal: FitnessGoal.values.byName(json['goal'] as String),
         activityLevel:
             ActivityLevel.values.byName(json['activityLevel'] as String),

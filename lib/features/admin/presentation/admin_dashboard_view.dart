@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../widgets/glass_container.dart';
-import '../../auth/presentation/auth_controller.dart';
 
+/// Developer-only content tooling. Reachable only in debug builds (the routes
+/// are excluded from release in the router).
 class AdminDashboardView extends ConsumerWidget {
   const AdminDashboardView({super.key});
 
@@ -20,11 +21,8 @@ class AdminDashboardView extends ConsumerWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.exit_to_app),
-            onPressed: () async {
-              await ref.read(authControllerProvider.notifier).signOut();
-              if (!context.mounted) return;
-              context.go('/landing');
-            },
+            tooltip: 'Back to app',
+            onPressed: () => context.go('/app'),
           )
         ],
       ),

@@ -12,7 +12,7 @@ class FastingRepository {
   Future<int> startSession(int targetSeconds) async {
     // Ensure we don't have another active session running. If we do, close it.
     final active = await (_db.select(_db.fastingSessions)..where((t) => t.endedAt.isNull())).get();
-    for (final session in active) {
+    for (var i = 0; i < active.length; i++) {
       await endSession(completed: false);
     }
 

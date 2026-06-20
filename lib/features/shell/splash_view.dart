@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../theme/colors.dart';
+import '../../theme/colors.dart';
 
+/// Shown briefly on cold start while the local profile loads.
 class SplashView extends StatelessWidget {
   const SplashView({super.key});
 

@@ -1,13 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../core/clock.dart';
 import '../data/local/database.dart';
-import '../features/auth/domain/app_user.dart';
 import '../features/profile/data/local_profile_repository.dart';
 import '../features/profile/domain/profile.dart';
 
-import '../features/auth/data/firebase_auth_repository.dart';
 import '../features/gyms/data/gyms_repository.dart';
 import '../features/measurements/data/measurements_repository.dart';
 import '../features/workouts/data/accessories_repository.dart';
@@ -19,19 +16,6 @@ export '../core/clock.dart' show clockProvider;
 /// Overridden in main() once SharedPreferences has been initialised.
 final sharedPreferencesProvider = Provider<SharedPreferences>((_) {
   throw UnimplementedError('sharedPreferencesProvider must be overridden in main()');
-});
-
-final localAuthRepositoryProvider = Provider<FirebaseAuthRepository>((ref) {
-  final prefs = ref.watch(sharedPreferencesProvider);
-  final clock = ref.watch(clockProvider);
-  final repo = FirebaseAuthRepository(prefs, clock);
-  ref.onDispose(repo.dispose);
-  return repo;
-});
-
-final authStateProvider = StreamProvider<AppUser?>((ref) {
-  final repo = ref.watch(localAuthRepositoryProvider);
-  return repo.authStateChanges();
 });
 
 final syncEngineProvider = Provider<SyncEngine>((ref) {

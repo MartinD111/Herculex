@@ -6,8 +6,7 @@ import '../../../data/local/database.dart';
 
 final cycleRepositoryProvider = Provider<CycleRepository>((ref) {
   final db = ref.watch(appDatabaseProvider);
-  final clock = ref.watch(clockProvider);
-  return CycleRepository(db, clock);
+  return CycleRepository(db);
 });
 
 final cycleSettingsProvider = FutureProvider<CycleSettingData?>((ref) {

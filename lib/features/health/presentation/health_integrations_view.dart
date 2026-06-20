@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
 import '../../../app/providers.dart';
 import '../../../theme/colors.dart';
 import '../../../widgets/glass_container.dart';
-import '../../../widgets/premium_button.dart';
 import 'health_providers.dart';
 import 'cycle_providers.dart';
 import '../../../data/local/database.dart';
@@ -406,11 +404,12 @@ class _HealthIntegrationsViewState extends ConsumerState<HealthIntegrationsView>
     }
   }
 
-  void _syncAllData() async {
+  Future<void> _syncAllData() async {
     setState(() {
       _isSyncing = true;
     });
     await ref.read(healthServiceProvider).runDailySync();
+    if (!mounted) return;
     setState(() {
       _isSyncing = false;
     });

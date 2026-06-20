@@ -8,8 +8,7 @@ import '../../../data/local/database.dart';
 
 final programsRepositoryProvider = Provider<ProgramsRepository>((ref) {
   final db = ref.watch(appDatabaseProvider);
-  final clock = ref.watch(clockProvider);
-  return ProgramsRepository(db, clock);
+  return ProgramsRepository(db);
 });
 
 final activeProgramsProvider = FutureProvider<List<ProgramData>>((ref) {

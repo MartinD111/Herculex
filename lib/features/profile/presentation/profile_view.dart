@@ -61,6 +61,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
   late ActivityLevel _activityLevel;
   late BiologicalSex? _sex;
 
+  final _nameCtrl = TextEditingController();
   final _ageCtrl = TextEditingController();
   final _weightCtrl = TextEditingController();
   final _heightCtrl = TextEditingController();
@@ -74,6 +75,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
     _goal = p?.goal ?? FitnessGoal.maintenance;
     _activityLevel = p?.activityLevel ?? ActivityLevel.lightlyActive;
     _sex = p?.sex;
+    _nameCtrl.text = p?.name ?? '';
     _ageCtrl.text = p?.ageYears?.toString() ?? '';
     _weightCtrl.text = p?.weightKg?.toString() ?? '';
     _heightCtrl.text = p?.heightCm?.toString() ?? '';
@@ -81,6 +83,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
 
   @override
   void dispose() {
+    _nameCtrl.dispose();
     _ageCtrl.dispose();
     _weightCtrl.dispose();
     _heightCtrl.dispose();
@@ -89,7 +92,9 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
 
   Future<void> _save() async {
     setState(() => _saving = true);
+    final name = _nameCtrl.text.trim();
     final profile = Profile(
+      name: name.isEmpty ? null : name,
       goal: _goal,
       activityLevel: _activityLevel,
       sex: _sex,
@@ -108,33 +113,6 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
       ),
     );
-  }
-
-  Future<void> _signOut(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Sign out?'),
-        content: const Text('You will be returned to the login screen.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red.shade700,
-              shape: const StadiumBorder(),
-            ),
-            child: const Text('Sign out'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
-    await ref.read(localAuthRepositoryProvider).signOut();
   }
 
   Future<void> _clearData(BuildContext context) async {
@@ -162,9 +140,9 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
       ),
     );
     if (confirmed != true || !mounted) return;
+    // Clearing the profile drops the user back to onboarding via the router
+    // redirect (which watches profileProvider).
     await ref.read(localProfileRepositoryProvider).clear();
-    if (!mounted) return;
-    await ref.read(localAuthRepositoryProvider).signOut();
   }
 
   @override
@@ -187,6 +165,18 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         // ── Avatar / header ───────────────────────────────────────────────
         _AvatarHeader(profile: widget.profile),
         const SizedBox(height: 32),
+
+        // ── Name ──────────────────────────────────────────────────────────
+        _SectionHeader('Name'),
+        const SizedBox(height: 12),
+        _StatField(
+          label: 'Name (optional)',
+          hint: 'Your name',
+          controller: _nameCtrl,
+          keyboardType: TextInputType.name,
+        ),
+
+        const SizedBox(height: 28),
 
         // ── Body stats ────────────────────────────────────────────────────
         _SectionHeader('Body Stats'),
@@ -363,14 +353,6 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         const SizedBox(height: 12),
         _SettingsCard(children: [
           _SettingsTile(
-            icon: Icons.logout_rounded,
-            label: 'Sign Out',
-            iconColor: Colors.red.shade600,
-            labelColor: Colors.red.shade600,
-            onTap: () => _signOut(context),
-          ),
-          _SettingsDivider(),
-          _SettingsTile(
             icon: Icons.delete_forever_rounded,
             label: 'Clear All Data',
             iconColor: Colors.red.shade900,
@@ -420,7 +402,12 @@ class _AvatarHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('My Profile', style: theme.textTheme.displayMedium),
+              Text(
+                (profile?.name?.trim().isNotEmpty ?? false)
+                    ? profile!.name!.trim()
+                    : 'My Profile',
+                style: theme.textTheme.displayMedium,
+              ),
               const SizedBox(height: 4),
               if (profile != null)
                 Text(
@@ -544,11 +531,16 @@ class _StatField extends StatelessWidget {
   final String label;
   final String hint;
   final TextEditingController controller;
+  final TextInputType keyboardType;
   const _StatField({
     required this.label,
     required this.hint,
     required this.controller,
+    this.keyboardType = const TextInputType.numberWithOptions(decimal: true),
   });
+
+  bool get _isNumeric =>
+      keyboardType == const TextInputType.numberWithOptions(decimal: true);
 
   @override
   Widget build(BuildContext context) {
@@ -568,11 +560,11 @@ class _StatField extends StatelessWidget {
         const SizedBox(height: 6),
         TextField(
           controller: controller,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          inputFormatters: [
-            FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-          ],
-          textAlign: TextAlign.center,
+          keyboardType: keyboardType,
+          inputFormatters: _isNumeric
+              ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))]
+              : null,
+          textAlign: _isNumeric ? TextAlign.center : TextAlign.start,
           style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
           decoration: InputDecoration(
             hintText: hint,

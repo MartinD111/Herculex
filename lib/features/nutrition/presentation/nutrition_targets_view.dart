@@ -206,7 +206,7 @@ class NutritionTargetsView extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _AddTargetSheet(ref: ref),
+      builder: (_) => AddTargetSheet(ref: ref),
     );
   }
 
@@ -226,15 +226,15 @@ class NutritionTargetsView extends ConsumerWidget {
 /// Which macro input mode the user is working in.
 enum _MacroMode { grams, percent, perLb }
 
-class _AddTargetSheet extends StatefulWidget {
+class AddTargetSheet extends StatefulWidget {
   final WidgetRef ref;
-  const _AddTargetSheet({required this.ref});
+  const AddTargetSheet({super.key, required this.ref});
 
   @override
-  State<_AddTargetSheet> createState() => _AddTargetSheetState();
+  State<AddTargetSheet> createState() => _AddTargetSheetState();
 }
 
-class _AddTargetSheetState extends State<_AddTargetSheet> {
+class _AddTargetSheetState extends State<AddTargetSheet> {
   String _scope = 'global';
   int? _weekday;
   _MacroMode _mode = _MacroMode.grams;

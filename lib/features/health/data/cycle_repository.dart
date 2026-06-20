@@ -1,13 +1,11 @@
 import 'package:drift/drift.dart';
 
-import '../../../core/clock.dart';
 import '../../../data/local/database.dart';
 
 class CycleRepository {
   final AppDatabase _db;
-  final Clock _clock;
 
-  CycleRepository(this._db, this._clock);
+  CycleRepository(this._db);
 
   // ── Settings ─────────────────────────────────────────────────────────────
 

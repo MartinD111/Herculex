@@ -24,11 +24,10 @@ class DashboardView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final user = ref.watch(authStateProvider).asData?.value;
     final greeting = _greeting();
-    final name = _firstName(user?.displayName);
     final today = DateFormat('MMM d, yyyy').format(DateTime.now()).toUpperCase();
     final profile = ref.watch(profileProvider).valueOrNull;
+    final name = _firstName(profile?.name);
     final isFemale = profile?.sex == BiologicalSex.female;
     final syncStatus = ref.watch(syncStatusProvider).valueOrNull ?? SyncStatus.idle;
     final config = ref.watch(dashboardConfigProvider);
@@ -114,11 +113,11 @@ class DashboardView extends ConsumerWidget {
 
   String _greeting() => 'Hello';
 
-  /// First name only, for a personal greeting. Generic OAuth placeholders like
-  /// "Google User" collapse to an empty string so we just say "Hello".
-  String _firstName(String? displayName) {
-    final raw = displayName?.trim() ?? '';
-    if (raw.isEmpty || raw.toLowerCase() == 'google user') return '';
+  /// First name only, for a personal greeting. Falls back to an empty string
+  /// (the header then just says "Hello") when no name was provided.
+  String _firstName(String? name) {
+    final raw = name?.trim() ?? '';
+    if (raw.isEmpty) return '';
     return raw.split(RegExp(r'\s+')).first;
   }
 

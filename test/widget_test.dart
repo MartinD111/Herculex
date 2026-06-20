@@ -5,7 +5,7 @@ import 'package:herculex/app/app.dart';
 import 'package:herculex/app/providers.dart';
 
 void main() {
-  testWidgets('App launches and reaches the landing screen', (tester) async {
+  testWidgets('First launch (no profile) boots into onboarding', (tester) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
 
@@ -16,10 +16,10 @@ void main() {
       ),
     );
 
-    // Let the splash-redirect resolve.
+    // Let the splash → onboarding redirect resolve.
     await tester.pumpAndSettle();
 
-    expect(find.text('HERCULEX'), findsOneWidget);
-    expect(find.text('Start Journey'), findsOneWidget);
+    // On-device only: there is no landing/login screen — onboarding is first.
+    expect(find.text('What is your primary goal?'), findsOneWidget);
   });
 }
